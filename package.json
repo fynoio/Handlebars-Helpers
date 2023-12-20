@@ -1,9 +1,24 @@
 {
-  "name": "my-handlebars-package",
-  "version": "1.0.1",
+  "name": "@fyno/handlebars_helpers",
+  "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
     "handlebars": "^4.7.8",
     "moment": "^2.29.4"
-  }
+  },
+  "description": "Fyno Web SDK",
+  "repository": {
+    "type": "git",
+    "url": "https://gitlab.com/fyno-app/handlebars-helpers.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "fyno",
+    "handlebars",
+    "custom-helpers"
+  ],
+  "author": "FYNO",
+  "license": "MIT"
 }

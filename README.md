@@ -1,93 +1,339 @@
-# Handlebars Helpers
+# Handlebars Helper Documentation
 
+This documentation provides details and examples for each custom Handlebars helper defined in the provided code.
 
+## 1. `isArray`
 
-## Getting started
+Checks if the provided context is an array.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+**Example:**
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/PranavBadami/handlebars-helpers.git
-git branch -M main
-git push -uf origin main
+```handlebars
+{{#isArray myArray}}
+  <!-- Code to execute if myArray is an array -->
+{{else}}
+  <!-- Code to execute if myArray is not an array -->
+{{/isArray}}
 ```
 
-## Integrate with your tools
+## 2. `formatDate`
 
-- [ ] [Set up project integrations](https://gitlab.com/PranavBadami/handlebars-helpers/-/settings/integrations)
+Formats a date according to the specified format, locale, and timezone.
 
-## Collaborate with your team
+**Example:**
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+```handlebars
+{{formatDate "2023-01-01T12:00:00" "medium" "en-us" "+05:30"}}
+```
 
-## Test and Deploy
+## 3. `formatDateTime`
 
-Use the built-in continuous integration in GitLab.
+Formats a date and time according to the specified format, locale, and timezone.
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+**Example:**
 
-***
+```handlebars
+{{formatDateTime "2023-01-01T12:00:00" "medium" "en-us" "+05:30"}}
+```
 
-# Editing this README
+## 4. `remove`
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+Removes specified strings from the input string.
 
-## Suggestions for a good README
+**Example:**
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+```handlebars
+{{remove "Hello, world!" "world"}}
+```
 
-## Name
-Choose a self-explaining name for your project.
+## 5. `isJSON`
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Checks if the provided context is a JSON object.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+**Example:**
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+```handlebars
+{{#isJSON myObject}}
+  <!-- Code to execute if myObject is a JSON object -->
+{{else}}
+  <!-- Code to execute if myObject is not a JSON object -->
+{{/isJSON}}
+```
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## 6. `ifEquals`
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Conditionally executes code based on equality.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+**Example:**
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```handlebars
+{{#ifEquals variable1 variable2}}
+  <!-- Code to execute if variable1 equals variable2 -->
+{{else}}
+  <!-- Code to execute if variable1 does not equal variable2 -->
+{{/ifEquals}}
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 7. `stringify`
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+Converts an object to as json string
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+**Example:**
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```handlebars
+{{stringify myObject}}
+```
 
-## License
-For open source projects, say how it is licensed.
+## 8. `parse`
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+Parses a JSON string into an object.
+
+**Example:**
+
+```handlebars
+{{#parse jsonString}}
+  <!-- Access properties of the parsed object -->
+  {{property1}}
+{{/parse}}
+```
+
+## 9. `ifMatches`
+
+Checks if a string matches a regular expression.
+
+**Example:**
+
+```handlebars
+{{#ifMatches myString "pattern"}}
+  <!-- Code to execute if myString matches the pattern -->
+{{else}}
+  <!-- Code to execute if myString does not match the pattern -->
+{{/ifMatches}}
+```
+
+## 10. `raw-helper`
+
+Returns the raw content without rendering Handlebars expressions.
+
+**Example:**
+
+```handlebars
+{{#raw-helper}}
+  <p>This is raw HTML content: {{variable}}</p>
+{{/raw-helper}}
+```
+
+## 11. `isEmail`
+
+Checks if the provided string is a valid email address.
+
+**Example:**
+
+```handlebars
+{{#isEmail "user@example.com"}}
+  <!-- Code to execute if the email is valid -->
+{{else}}
+  <!-- Code to execute if the email is not valid -->
+{{/isEmail}}
+```
+
+## 12. `getNumberFromText`
+
+Extracts a number from the given text.
+
+**Example:**
+
+```handlebars
+{{getNumberFromText "The price is $500"}}
+```
+
+## 13. `default`
+
+Provides a default value if the key is falsy.
+
+**Example:**
+
+```handlebars
+{{default myKey "Default Value"}}
+```
+
+## 14. `ifStartsWith`
+
+Conditionally executes code based on whether a string starts with a specified prefix.
+
+**Example:**
+
+```handlebars
+{{#ifStartsWith myString "prefix"}}
+  <!-- Code to execute if myString starts with "prefix" -->
+{{else}}
+  <!-- Code to execute if myString does not start with "prefix" -->
+{{/ifStartsWith}}
+```
+
+## 15. `isExpo`
+
+Extracts the Expo token from a string if present.
+
+**Example:**
+
+```handlebars
+{{isExpo "expo_token:ABC123"}}
+```
+
+## 16. `isFCM`
+
+Extracts the FCM token from a string if present.
+
+**Example:**
+
+```handlebars
+{{isFCM "fcm_token:XYZ789"}}
+```
+
+## 17. `isOnesignal`
+
+Extracts Onesignal selector and token from a string if present.
+
+**Example:**
+
+```handlebars
+{{#isOnesignal "onesignal_player_id:12345"}}
+  <!-- Access properties: {{onesignal_selector}}, {{onesignal_token}} -->
+{{else}}
+  <!-- Code to execute if the string does not match Onesignal format -->
+{{/isOnesignal}}
+```
+
+## 18. `isEmpty`
+
+Checks if an object is empty.
+
+**Example:**
+
+```handlebars
+{{#isEmpty myObject}}
+  <!-- Code to execute if myObject is empty -->
+{{else}}
+  <!-- Code to execute if myObject is not empty -->
+{{/isEmpty}}
+```
+
+## 19. `setVariable`
+
+Sets a variable in the root context.
+
+**Example:**
+
+```handlebars
+{{setVariable "myVar" "myValue"}}
+```
+
+## 20. `pushCallback`
+
+Pushes callback information into the root context.
+
+**Example:**
+
+```handlebars
+{{pushCallback}}
+```
+
+## 21. `generateNotifyId`
+
+Generates a notification ID based on the provided key.
+
+**Example:**
+
+```handlebars
+{{generateNotifyId "myKey"}}
+```
+
+## 22. `dateDiff`
+
+Calculates the difference between two dates.
+
+**Example:**
+
+```handlebars
+{{dateDiff "2023-01-01T12:00:00" "NOW" "days"}}
+```
+
+## 23. `compare`
+
+Compares two values based on the specified operator.
+
+**Example:**
+
+```handlebars
+{{#compare value1 "eq" value2}}
+  <!-- Code to execute if value1 equals value2 -->
+{{else}}
+  <!-- Code to execute if value1 does not equal value2 -->
+{{/compare}}
+```
+
+## 24. `eq, ne, lt, gt, lte, gte, and, or`
+
+Logical comparison helpers.
+
+**Example:**
+
+```handlebars
+{{#eq variable1 variable2}}
+  <!-- Code to execute if variable1 equals variable2 -->
+{{/eq}}
+```
+
+## 25. `split`
+
+Splits a string into an array using a specified delimiter.
+
+**Example:**
+
+```handlebars
+{{#split "apple,orange,banana" ","}}
+  <!-- Access individual elements in the array -->
+  {{this}}
+{{/split}}
+```
+
+## 26. `math`
+
+Performs basic arithmetic operations on two values.
+
+**Example:**
+
+```handlebars
+{{math 10 "+" 5}}
+```
+
+## 27. `relativeDay`
+
+Determines the relationship of a given date to the current date.
+
+**Example:**
+
+```handlebars
+{{relativeDay "2023-01-01"}}
+```
+
+## 28. `trim`
+
+Trims a string to a specified length and delimiter.
+
+**Example:**
+
+```handlebars
+{{trim "This is a long string" 10 "..."}}
+```
+
+## 29. `formatNumber`
+
+Formats a number using the specified locale.
+
+**Example:**
+
+```handlebars
+{{formatNumber 1234567.89 "en-US"}}
+```
