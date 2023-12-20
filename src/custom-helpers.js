@@ -1,5 +1,5 @@
-import handlebars from "handlebars"
-import moment from "moment"
+const handlebars = require('handlebars')
+const moment = require('moment')
 
 const timezones = {
     '+00:00': 'Greenwich',
