@@ -1,4 +1,5 @@
-const Handlebars = require('Handlebars')
+import handlebars from "handlebars"
+import moment from "moment"
 
 const timezones = {
     '+00:00': 'Greenwich',
@@ -41,11 +42,11 @@ const timezones = {
     '-12:00': 'Etc/GMT+12'
 }
 
-Handlebars.registerHelper('isArray', function (context) {
+handlebars.registerHelper('isArray', function (context) {
     return Array.isArray(context)
 })
 
-Handlebars.registerHelper('formatDate', function (date, format, locale = 'en-us', timeZone) {
+handlebars.registerHelper('formatDate', function (date, format, locale = 'en-us', timeZone) {
     const parsedDate = new Date(date)
 
     if (timeZone in timezones) {
@@ -92,7 +93,7 @@ Handlebars.registerHelper('formatDate', function (date, format, locale = 'en-us'
     }
 })
 
-Handlebars.registerHelper('formatDateTime', function (date, format, locale = 'en-us', timeZone) {
+handlebars.registerHelper('formatDateTime', function (date, format, locale = 'en-us', timeZone) {
     const parsedDate = new Date(date)
 
     if (timeZone in timezones) {
@@ -148,7 +149,7 @@ Handlebars.registerHelper('formatDateTime', function (date, format, locale = 'en
     }
 })
 
-Handlebars.registerHelper('remove', function (inputString, stringsToReplace) {
+handlebars.registerHelper('remove', function (inputString, stringsToReplace) {
     if (typeof inputString === 'object' || !inputString) {
         return
     }
@@ -163,7 +164,7 @@ Handlebars.registerHelper('remove', function (inputString, stringsToReplace) {
     return replacedString
 })
 
-Handlebars.registerHelper('isJSON', function (context) {
+handlebars.registerHelper('isJSON', function (context) {
     if (typeof context === 'object') {
         return true
     } else {
@@ -171,58 +172,58 @@ Handlebars.registerHelper('isJSON', function (context) {
     }
 })
 
-Handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
+handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
     return arg1 == arg2 ? options.fn(this) : options.inverse(this)
 })
 
-Handlebars.registerHelper('stringify', function (context) {
+handlebars.registerHelper('stringify', function (context) {
     return JSON.stringify(context)
 })
 
-Handlebars.registerHelper('parse', function (context) {
+handlebars.registerHelper('parse', function (context) {
     return JSON.parse(context)
 })
 
-Handlebars.registerHelper('ifMatches', function (arg1, arg2, options) {
+handlebars.registerHelper('ifMatches', function (arg1, arg2, options) {
     return arg1.match(new RegExp(arg2)) ? options.fn(this) : options.inverse(this)
 })
 
-Handlebars.registerHelper('raw-helper', function (options) {
+handlebars.registerHelper('raw-helper', function (options) {
     return options.fn()
 })
 
-Handlebars.registerHelper('isEmail', function (options) {
+handlebars.registerHelper('isEmail', function (options) {
     var regex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/
 
     return regex.test(options)
 })
 
-Handlebars.registerHelper('getNumberFromText', function (context) {
+handlebars.registerHelper('getNumberFromText', function (context) {
     const regex = /\d{4,10}/gm
     const num = context.fn(this).match(regex)
 
     return num[0]
 })
 
-Handlebars.registerHelper('default', function (key, defaultvalue) {
+handlebars.registerHelper('default', function (key, defaultvalue) {
     return key ? key : defaultvalue
 })
 
-Handlebars.registerHelper('ifStartsWith', function (arg1, arg2, options) {
+handlebars.registerHelper('ifStartsWith', function (arg1, arg2, options) {
     return arg1?.startsWith(arg2) ? options?.fn(this) : options?.inverse(this)
 })
 
-Handlebars.registerHelper('isExpo', function (str) {
+handlebars.registerHelper('isExpo', function (str) {
     if (/expo_token:/s.test(str)) return str.split(/expo_token:(.*)/s)[1]
     else return str
 })
 
-Handlebars.registerHelper('isFCM', function (str) {
+handlebars.registerHelper('isFCM', function (str) {
     if (/fcm_token:/s.test(str)) return str.split(/fcm_token:(.*)/s)[1]
     else return str
 })
 
-Handlebars.registerHelper('isOnesignal', function (str, options) {
+handlebars.registerHelper('isOnesignal', function (str, options) {
     const regex = new RegExp('onesignal_(?:(player_id)|(external_id)):')
     if (regex.test(str)) {
         options.data.root['onesignal_selector'] = str.split(/(onesignal_(?:(player_id)|(external_id)):)(.*)/s)[1]
@@ -233,27 +234,27 @@ Handlebars.registerHelper('isOnesignal', function (str, options) {
     }
 })
 
-Handlebars.registerHelper('isEmpty', function (obj) {
+handlebars.registerHelper('isEmpty', function (obj) {
     return Object.keys(obj || {}).length
 })
 
-Handlebars.registerHelper('setVariable', function (varName, varValue, options) {
+handlebars.registerHelper('setVariable', function (varName, varValue, options) {
     options.data.root[varName] = varValue
 })
 
-Handlebars.registerHelper('pushCallback', function (options) {
+handlebars.registerHelper('pushCallback', function (options) {
     options.data.root.content.extras.data['callback'] =
         options.data.root.fyno.callback.url + '?' + options.data.root.fyno.callback.params
     options.data.root.content.extras.data['message_id'] = options.data.root.fyno.callback.m
 })
 
-Handlebars.registerHelper('generateNotifyId', function (key) {
+handlebars.registerHelper('generateNotifyId', function (key) {
     return !key || key == ''
         ? Math.ceil(Math.random() * 100000)
         : Math.abs(key.split('').reduce((s, c) => (Math.imul(31, s) + c.charCodeAt(0)) | 0, 0))
 })
 
-Handlebars.registerHelper('dateDiff', function (arg1, arg2, options) {
+handlebars.registerHelper('dateDiff', function (arg1, arg2, options) {
     //arg1, arg2 must have RFC-3339, ISO_8601 date format
     //otherwise, it will return NaN
     if (arg2.toUpperCase() == 'NOW') {
@@ -273,7 +274,7 @@ Handlebars.registerHelper('dateDiff', function (arg1, arg2, options) {
     return diff
 })
 
-Handlebars.registerHelper('compare', function (v1, operator, v2, options) {
+handlebars.registerHelper('compare', function (v1, operator, v2, options) {
     var operators = {
         eq: v1 == v2 ? true : false,
         eqq: v1 === v2 ? true : false,
@@ -295,7 +296,7 @@ Handlebars.registerHelper('compare', function (v1, operator, v2, options) {
     }
 })
 
-Handlebars.registerHelper({
+handlebars.registerHelper({
     eq: (v1, v2) => v1 === v2,
     ne: (v1, v2) => v1 !== v2,
     lt: (v1, v2) => v1 < v2,
@@ -310,7 +311,7 @@ Handlebars.registerHelper({
     }
 })
 
-Handlebars.registerHelper('split', function (string, delimiter = ',', index) {
+handlebars.registerHelper('split', function (string, delimiter = ',', index) {
     if (typeof string === 'object') {
         return
     }
@@ -330,9 +331,18 @@ Handlebars.registerHelper('split', function (string, delimiter = ',', index) {
     }
 })
 
-Handlebars.registerHelper('math', function (lvalue, operator, rvalue) {
+handlebars.registerHelper('math', function (lvalue, operator, rvalue) {
     lvalue = parseFloat(lvalue)
     rvalue = parseFloat(rvalue)
+
+    // return {
+    //   '+': lvalue + rvalue,
+    //   '-': lvalue - rvalue,
+    //   '*': lvalue * rvalue,
+    //   '/': lvalue / rvalue,
+    //   '%': lvalue % rvalue,
+    //   round: lvalue.toFixed(rvalue)
+    // }[operator]
 
     switch (operator) {
         case '+':
@@ -350,7 +360,7 @@ Handlebars.registerHelper('math', function (lvalue, operator, rvalue) {
     }
 })
 
-Handlebars.registerHelper('relativeDay', function (given_date) {
+handlebars.registerHelper('relativeDay', function (given_date) {
     let todaysDate = new Date()
     let givenDate = new Date(given_date)
     if (givenDate.setHours(0, 0, 0, 0) == todaysDate.setHours(0, 0, 0, 0)) {
@@ -368,7 +378,7 @@ Handlebars.registerHelper('relativeDay', function (given_date) {
     }
 })
 
-Handlebars.registerHelper('trim', function (string, length, delim) {
+handlebars.registerHelper('trim', function (string, length, delim) {
     if (typeof string === 'object') {
         return
     }
@@ -397,7 +407,7 @@ Handlebars.registerHelper('trim', function (string, length, delim) {
     return string
 })
 
-Handlebars.registerHelper('formatNumber', function (number, locale = 'en-US') {
+handlebars.registerHelper('formatNumber', function (number, locale = 'en-US') {
     if (isNaN(number)) {
         return number
     }
@@ -405,4 +415,4 @@ Handlebars.registerHelper('formatNumber', function (number, locale = 'en-US') {
     return new Intl.NumberFormat(locale).format(number)
 })
 
-module.exports = Handlebars
+module.exports = handlebars

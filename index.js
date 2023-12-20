@@ -1,1 +1,1 @@
-module.exports = require('./custom-helpers')
+module.exports = require('./src/custom-helpers')

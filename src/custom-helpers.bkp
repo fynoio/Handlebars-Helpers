@@ -1,0 +1,534 @@
+/**
+ * Custom Handlebars helper functions.
+ * @packageDocumentation
+ */
+
+const Handlebars = require('handlebars');
+import * as moment from 'moment';
+
+const timezones: Record<string, string> = {
+    '+00:00': 'Greenwich',
+    '+01:00': 'Africa/Algiers',
+    '+02:00': 'Africa/Johannesburg',
+    '+03:00': 'Asia/Baghdad',
+    '+03:30': 'Asia/Tehran',
+    '+04:00': 'Europe/Saratov',
+    '+04:30': 'Asia/Kabul',
+    '+05:00': 'Asia/Karachi',
+    '+05:30': 'Asia/Calcutta',
+    '+05:45': 'Asia/Kathmandu',
+    '+06:00': 'Asia/Dhaka',
+    '+06:30': 'Asia/Yangon',
+    '+07:00': 'Asia/Bangkok',
+    '+08:00': 'Asia/Hong_Kong',
+    '+08:45': 'Australia/Eucla',
+    '+09:00': 'Asia/Tokyo',
+    '+09:30': 'Australia/Adelaide',
+    '+10:00': 'Australia/Melbourne',
+    '+10:30': 'Australia/LHI',
+    '+11:00': 'Antarctica/Casey',
+    '+12:00': 'Pacific/Auckland',
+    '+12:45': 'Pacific/Chatham',
+    '+13:00': 'Pacific/Apia',
+    '+14:00': 'Pacific/Kiritimati',
+    '-01:00': 'Atlantic/Cape_Verde',
+    '-02:00': 'America/Godthab',
+    '-02:30': 'America/St_Johns',
+    '-03:00': 'Canada/Atlantic',
+    '-04:00': 'America/Anguilla',
+    '-05:00': 'America/Chicago',
+    '-06:00': 'America/Denver',
+    '-07:00': 'US/Pacific',
+    '-08:00': 'US/Alaska',
+    '-09:00': 'America/Adak',
+    '-09:30': 'Pacific/Marquesas',
+    '-10:00': 'US/Hawaii',
+    '-11:00': 'Pacific/Midway',
+    '-12:00': 'Etc/GMT+12'
+}
+
+/**
+ * Checks if the input is an array.
+ *
+ * @param context - The input to check.
+ * @returns Returns `true` if the input is an array, otherwise `false`.
+ */
+Handlebars.registerHelper('isArray', function (context: any): boolean {
+    return Array.isArray(context);
+});
+
+/**
+ * Formats a date based on the specified format, locale, and time zone.
+ *
+ * @param date - The input date.
+ * @param format - The format for the date.
+ * @param locale - The locale for formatting (default is 'en-us').
+ * @param timeZone - The time zone for formatting.
+ * @returns Formatted date string.
+ */
+Handlebars.registerHelper('formatDate', function (
+    date: string,
+    format: string,
+    locale = 'en-us',
+    timeZone?: string
+): string {
+    const parsedDate = new Date(date);
+
+    if (timeZone && timeZone in timezones) {
+        timeZone = timezones[timeZone];
+    } else {
+        timeZone = 'UTC';
+    }
+
+    // Define a dictionary of supported date formats
+    const dateFormatMap: Record<string, object> = {
+        short: {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            timeZone,
+        },
+        medium: {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            timeZone,
+        },
+        long: {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone,
+        },
+        custom: {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            timeZone,
+        },
+        // Add more date formats as needed
+    };
+
+    if (dateFormatMap[format]) {
+        return parsedDate.toLocaleDateString(locale, dateFormatMap[format]);
+    } else {
+        // Default to a custom format if the provided format is not recognized
+        return parsedDate.toLocaleDateString(locale, dateFormatMap['custom']);
+    }
+});
+
+/**
+ * Formats a date and time based on the specified format, locale, and time zone.
+ *
+ * @param date - The input date.
+ * @param format - The format for the date and time.
+ * @param locale - The locale for formatting (default is 'en-us').
+ * @param timeZone - The time zone for formatting.
+ * @returns Formatted date and time string.
+ */
+Handlebars.registerHelper('formatDateTime', function (
+    date: string,
+    format: string,
+    locale = 'en-us',
+    timeZone?: string
+): string {
+    const parsedDate = new Date(date);
+
+    if (timeZone && timeZone in timezones) {
+        timeZone = timezones[timeZone];
+    } else {
+        timeZone = 'UTC';
+    }
+
+    // Define a dictionary of supported date formats
+    const dateFormatMap: Record<string, object> = {
+        short: {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone,
+        },
+        medium: {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone,
+        },
+        long: {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone,
+        },
+        custom: {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZone,
+        },
+        // Add more date formats as needed
+    };
+
+    if (dateFormatMap[format]) {
+        return parsedDate.toLocaleTimeString(locale, dateFormatMap[format]);
+    } else {
+        // Default to a custom format if the provided format is not recognized
+        return parsedDate.toLocaleTimeString(locale, dateFormatMap['custom']);
+    }
+});
+
+/**
+ * Removes specified substrings from the input string.
+ *
+ * @param inputString - The input string.
+ * @param stringsToReplace - The substring(s) to be removed.
+ * @returns The modified string.
+ */
+
+export const remove = function (inputString: string, stringsToReplace: string): string {
+    if (typeof inputString === 'object' || !inputString) {
+        return '';
+    }
+
+    if (typeof stringsToReplace === 'object') {
+        return inputString;
+    }
+
+    const pattern = new RegExp(stringsToReplace, 'g');
+    const replacedString = inputString.replace(pattern, '');
+
+    return replacedString;
+}
+
+Handlebars.registerHelper('remove', remove);
+
+/**
+ * Checks if the input is a JSON object.
+ *
+ * @param context - The input to check.
+ * @returns Returns `true` if the input is a JSON object, otherwise `false`.
+ */
+Handlebars.registerHelper('isJSON', function (context: any): boolean {
+    return typeof context === 'object';
+});
+
+/**
+ * Checks if two values are equal and executes the appropriate block.
+ *
+ * @param arg1 - The first value for comparison.
+ * @param arg2 - The second value for comparison.
+ * @param options - Handlebars options.
+ * @returns Executed block based on equality.
+ */
+Handlebars.registerHelper('ifEquals', (arg1: any, arg2: any, options: any) => {
+    return arg1 == arg2 ? options.fn(this as any) : options.inverse(this as any);
+});
+
+
+/**
+ * Converts an object to its JSON string representation.
+ *
+ * @param context - The object to stringify.
+ * @returns The JSON string.
+ */
+Handlebars.registerHelper('stringify', function (context: any): string {
+    return JSON.stringify(context);
+});
+
+/**
+ * Parses a JSON string into an object.
+ *
+ * @param context - The JSON string to parse.
+ * @returns The parsed object.
+ */
+Handlebars.registerHelper('parse', function (context: string): any {
+    return JSON.parse(context);
+});
+
+/**
+ * Checks if a string matches a regular expression and executes the appropriate block.
+ *
+ * @param arg1 - The string to check.
+ * @param arg2 - The regular expression pattern.
+ * @param options - Handlebars options.
+ * @returns Executed block based on match.
+ */
+Handlebars.registerHelper('ifMatches', (arg1: string, arg2: string, options: any) => {
+    return arg1.match(new RegExp(arg2)) ? options.fn(this as any) : options.inverse(this as any);
+});
+
+/**
+ * A raw helper to include raw HTML content.
+ *
+ * @param options - Handlebars options.
+ * @returns The raw HTML content.
+ */
+Handlebars.registerHelper('raw-helper', (options: any) => {
+    return options.fn(this as any);
+});
+
+/**
+ * Checks if a string is a valid email address.
+ *
+ * @param options - The email address to check.
+ * @returns Returns `true` if the input is a valid email address, otherwise `false`.
+ */
+Handlebars.registerHelper('isEmail', function (options: string): boolean {
+    const regex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    return regex.test(options);
+});
+
+/**
+ * Retrieves the number from a text string.
+ *
+ * @param context - The text string.
+ * @returns The extracted number.
+ */
+Handlebars.registerHelper('getNumberFromText', function (context: string): string | null {
+    const regex = /\d{4,10}/gm;
+    const num = context.match(regex);
+    return num ? num[0] : null;
+});
+
+/**
+ * Provides a default value if the key is falsy.
+ *
+ * @param key - The value to check.
+ * @param defaultvalue - The default value.
+ * @returns The key if truthy, otherwise the default value.
+ */
+Handlebars.registerHelper('default', function (key: any, defaultvalue: any): any {
+    return key ? key : defaultvalue;
+});
+
+/**
+ * Checks if a string starts with a specified prefix and executes the appropriate block.
+ *
+ * @param arg1 - The string to check.
+ * @param arg2 - The prefix to check for.
+ * @param options - Handlebars options.
+ * @returns Executed block based on match.
+ */
+Handlebars.registerHelper('ifStartsWith', (arg1: string | undefined, arg2: string | undefined, options: any) => {
+    return (arg1 && arg2 && arg1.startsWith(arg2)) ? options.fn(this as any) : options.inverse(this as any);
+});
+
+/**
+ * Extracts the Expo token from a string.
+ *
+ * @param str - The input string.
+ * @returns The Expo token if found, otherwise the input string.
+ */
+Handlebars.registerHelper('isExpo', function (str: string): string {
+    if (/expo_token:/s.test(str)) return str.split(/expo_token:(.*)/s)[1];
+    else return str;
+});
+
+/**
+ * Extracts the FCM token from a string.
+ *
+ * @param str - The input string.
+ * @returns The FCM token if found, otherwise the input string.
+ */
+Handlebars.registerHelper('isFCM', function (str: string): string {
+    if (/fcm_token:/s.test(str)) return str.split(/fcm_token:(.*)/s)[1];
+    else return str;
+});
+
+/**
+ * Extracts the OneSignal selector and token from a string.
+ *
+ * @param str - The input string.
+ * @param options - Handlebars options for storing extracted data.
+ */
+Handlebars.registerHelper('isOnesignal', function (str: string, options: any): void {
+    const regex = new RegExp('onesignal_(?:(player_id)|(external_id)):');
+    if (regex.test(str)) {
+        options.data.root['onesignal_selector'] = str.split(/(onesignal_(?:(player_id)|(external_id)):)(.*)/s)[1];
+        options.data.root['onesignal_token'] = str.split(/(onesignal_(?:(player_id)|(external_id)):)(.*)/s)[4];
+    } else {
+        options.data.root['onesignal_selector'] = 'onesignal_external_id:';
+        options.data.root['onesignal_token'] = str;
+    }
+});
+
+/**
+ * Checks if an object is empty.
+ *
+ * @param obj - The object to check.
+ * @returns Returns `true` if the object is empty, otherwise `false`.
+ */
+Handlebars.registerHelper('isEmpty', function (obj: Record<string, any> | undefined): boolean {
+    return Object.keys(obj || {}).length === 0;
+});
+
+/**
+ * Sets a variable in the Handlebars context.
+ *
+ * @param varName - The name of the variable.
+ * @param varValue - The value to set.
+ * @param options - Handlebars options.
+ */
+Handlebars.registerHelper('setVariable', function (
+    varName: string,
+    varValue: any,
+    options: any
+): void {
+    options.data.root[varName] = varValue;
+});
+
+/**
+ * Pushes callback data to the Handlebars context.
+ *
+ * @param options - Handlebars options for storing callback data.
+ */
+Handlebars.registerHelper('pushCallback', function (options: any): void {
+    options.data.root.content.extras.data['callback'] =
+        options.data.root.fyno.callback.url + '?' + options.data.root.fyno.callback.params;
+    options.data.root.content.extras.data['message_id'] = options.data.root.fyno.callback.m;
+});
+
+/**
+ * Generates a random notification ID or uses a provided key.
+ *
+ * @param key - The key for generating the ID.
+ * @returns The generated or provided notification ID.
+ */
+Handlebars.registerHelper('generateNotifyId', function (key?: string): number {
+    return !key || key == ''
+        ? Math.ceil(Math.random() * 100000)
+        : Math.abs(key.split('').reduce((s, c) => (Math.imul(31, s) + c.charCodeAt(0)) | 0, 0));
+});
+
+/**
+ * Registers a Handlebars helper that calculates the difference between two dates.
+ *
+ * @param arg1 - The first date (RFC-3339 or ISO_8601 format).
+ * @param arg2 - The second date or 'NOW' for the current date.
+ * @param options - Handlebars options object.
+ * @returns The difference between the dates.
+ */
+Handlebars.registerHelper('dateDiff', function (arg1: string, arg2: string, options: any): number {
+    if (arg2.toUpperCase() == 'NOW') {
+        arg2 = moment().toISOString();
+    }
+
+    if (arg1.toUpperCase() == 'NOW') {
+        arg1 = moment().toISOString();
+    }
+
+    if (!moment(arg2, moment.ISO_8601).isValid() || !moment(arg1, moment.ISO_8601).isValid()) {
+        return NaN;
+    }
+
+    const diff = moment(arg2).diff(moment(arg1), options);
+
+    return diff;
+});
+
+/**
+ * Registers a Handlebars helper that performs comparison operations.
+ *
+ * @param v1 - The left operand.
+ * @param operator - The comparison operator ('eq', 'eqq', 'ne', 'nee', 'gt', 'ge', 'lt', 'le', 'or', 'and').
+ * @param v2 - The right operand.
+ * @param options - Handlebars options object.
+ * @returns The result of the comparison.
+ */
+Handlebars.registerHelper('compare', (v1: any, operator: string, v2: any, options: any): string => {
+    const operators: Record<string, boolean> = {
+        eq: v1 == v2,
+        eqq: v1 === v2,
+        ne: v1 != v2,
+        nee: v1 !== v2,
+        gt: v1 > v2,
+        ge: v1 >= v2,
+        lt: v1 < v2,
+        le: v1 <= v2,
+        or: v1 || v2,
+        and: v1 && v2
+    };
+
+    if (operators.hasOwnProperty(operator)) {
+        return operators[operator] ? options.fn(this as any) : options.inverse(this as any);
+    }
+
+    return options.inverse(this as any);
+});
+
+
+/**
+ * Registers a set of comparison Handlebars helpers using inline functions.
+ */
+Handlebars.registerHelper({
+    eq: (v1: any, v2: any) => v1 === v2,
+    ne: (v1: any, v2: any) => v1 !== v2,
+    lt: (v1: any, v2: any) => v1 < v2,
+    gt: (v1: any, v2: any) => v1 > v2,
+    lte: (v1: any, v2: any) => v1 <= v2,
+    gte: (v1: any, v2: any) => v1 >= v2,
+    and() {
+        return Array.prototype.every.call(arguments, Boolean);
+    },
+    or() {
+        return Array.prototype.slice.call(arguments, 0, -1).some(Boolean);
+    }
+});
+
+/**
+ * Registers a Handlebars helper that splits a string into an array using a delimiter.
+ *
+ * @param string - The input string.
+ * @param delimiter - The delimiter for splitting (default is ',').
+ * @param index - The optional index to retrieve a specific part of the split string.
+ * @returns The array of split parts or a specific part based on the index.
+ */
+Handlebars.registerHelper('split', function (string: string, delimiter: string = ',', index?: number): string | string[] {
+    if (typeof string === 'object') {
+        return '';
+    }
+
+    if (!string) {
+        return '';
+    }
+
+    if (!isNaN(index!)) {  // Use non-null assertion
+        if (index! < 0) {
+            index! = string.split(delimiter).length + index!;
+        }
+
+        return string.split(delimiter)[index!] || '';
+    } else {
+        return string.split(delimiter);
+    }
+});
+
+
+// Continue registering the rest of your helpers...
+
+/**
+ * Registers a Handlebars helper that formats a number using the specified locale.
+ *
+ * @param number - The number to format.
+ * @param locale - The locale to use for formatting (default is 'en-US').
+ * @returns The formatted number.
+ */
+Handlebars.registerHelper('formatNumber', function (number: number, locale: string = 'en-US'): string {
+    if (isNaN(number)) {
+        return number.toString();
+    }
+
+    return new Intl.NumberFormat(locale).format(number);
+});
+
+export default Handlebars
+

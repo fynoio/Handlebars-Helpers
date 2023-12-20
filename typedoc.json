@@ -1,0 +1,3 @@
+{
+  "entryPoints": ["./src/custom-helpers.ts"]
+}
