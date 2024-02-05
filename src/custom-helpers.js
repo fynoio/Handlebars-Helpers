@@ -178,7 +178,7 @@ handlebars.registerHelper("replace", function (input, findRegex, replaceStr) {
     if (typeof input === "object") {
         return;
     }
-    const regex = new RegExp(findRegex);
+    const regex = new RegExp(findRegex, 'g');
 
     return input.replace(regex, replaceStr);
 });
