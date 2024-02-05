@@ -172,6 +172,17 @@ handlebars.registerHelper('isJSON', function (context) {
     }
 })
 
+handlebars.registerHelper("replace", function (input, findRegex, replaceStr) {
+    if (!input) return "";
+
+    if (typeof input === "object") {
+        return;
+    }
+    const regex = new RegExp(findRegex);
+
+    return input.replace(regex, replaceStr);
+});
+
 handlebars.registerHelper('ifEquals', function (arg1, arg2, options) {
     return arg1 == arg2 ? options.fn(this) : options.inverse(this)
 })
