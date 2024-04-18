@@ -425,4 +425,39 @@ handlebars.registerHelper('formatNumber', function (number, locale = 'en-US', op
   return new Intl.NumberFormat(locale, options).format(number)
 })
 
+handlebars.registerHelper('sumAll', (obj, key) => {
+  function deepFlattenObject(obj, parentKey = '') {
+    return Object.keys(obj).reduce((acc, key) => {
+      const prefixedKey = parentKey ? `${parentKey}.${key}` : key
+      if (typeof obj[key] === 'object' && obj[key] !== null) {
+        if (Array.isArray(obj[key])) {
+          obj[key].forEach((item, index) => {
+            const nestedKey = `${prefixedKey}[${index}]`
+            if (typeof item === 'object' && item !== null) {
+              Object.assign(acc, deepFlattenObject(item, nestedKey))
+            } else {
+              acc[nestedKey] = item
+            }
+          })
+        } else {
+          Object.assign(acc, deepFlattenObject(obj[key], prefixedKey))
+        }
+      } else {
+        acc[prefixedKey] = obj[key]
+      }
+      return acc
+    }, {})
+  }
+
+  const flattenedObj = deepFlattenObject(obj)
+
+  let sum = 0
+  Object.keys(flattenedObj).map(k => {
+    if (k.replaceAll(/\[\d+\]/g, '') === key) {
+      sum += parseFloat(flattenedObj[k].toString().replace(/,/g, ''))
+    }
+  })
+  return sum
+})
+
 module.exports = handlebars
