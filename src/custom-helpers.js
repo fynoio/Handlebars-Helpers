@@ -418,7 +418,18 @@ handlebars.registerHelper('trim', function (string, length, delim) {
   return string
 })
 
-handlebars.registerHelper('formatNumber', function (number, locale = 'en-US', options = {}) {
+handlebars.registerHelper('formatNumber', function (number, locale = 'en-US', options = '') {
+  try {
+    let op = options.split(',')
+    let split = '='
+    let json = {}
+    op.map(k => {
+      json[k.split(split)[0]?.trim()] = k.split(split)[1]?.trim()
+    })
+    options = json
+  } catch (e) {
+    options = {}
+  }
   if (isNaN(number)) {
     return number
   }
