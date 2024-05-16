@@ -471,4 +471,42 @@ handlebars.registerHelper('sumAll', (obj, key) => {
   return sum
 })
 
+handlebars.registerHelper('formatDay', function (date, format, locale = 'en-us', timeZone) {
+  const parsedDate = new Date(date)
+
+  if (timeZone in timezones) {
+    timeZone = timezones[timeZone]
+  } else {
+    timeZone = 'UTC'
+  }
+
+  // Define a dictionary of supported date formats
+  const dateFormatMap = {
+    short: {
+      weekday: 'short',
+      timeZone
+    },
+    medium: {
+      weekday: 'short',
+      timeZone
+    },
+    long: {
+      weekday: 'long',
+      timeZone
+    },
+    custom: {
+      weekday: 'long',
+      timeZone
+    }
+    // Add more date formats as needed
+  }
+
+  if (dateFormatMap[format]) {
+    return parsedDate.toLocaleDateString(locale, dateFormatMap[format])
+  } else {
+    // Default to a custom format if the provided format is not recognized
+    return parsedDate.toLocaleDateString(locale, dateFormatMap['custom'])
+  }
+})
+
 module.exports = handlebars
