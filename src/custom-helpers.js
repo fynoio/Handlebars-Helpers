@@ -519,4 +519,8 @@ handlebars.registerHelper('slice', function (string, from = 0, to = 0) {
   return string.slice(from, to)
 })
 
+handlebars.registerHelper('select', function (string, count) {
+  return string.slice(count)
+})
+
 module.exports = handlebars
