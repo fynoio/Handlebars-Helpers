@@ -509,4 +509,14 @@ handlebars.registerHelper('formatDay', function (date, format, locale = 'en-us',
   }
 })
 
+handlebars.registerHelper('slice', function (string, from = 0, to = 0) {
+  if (typeof string === 'object') {
+    return
+  }
+  if (!string) {
+    return
+  }
+  return string.slice(from, to)
+})
+
 module.exports = handlebars
