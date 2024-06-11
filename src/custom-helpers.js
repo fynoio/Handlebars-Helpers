@@ -1,5 +1,6 @@
 const handlebars = require('handlebars')
 const moment = require('moment')
+const cloneDeep = require('lodash/cloneDeep')
 
 const timezones = {
   '+00:00': 'Greenwich',
@@ -521,6 +522,35 @@ handlebars.registerHelper('slice', function (string, from = 0, to = 0) {
 
 handlebars.registerHelper('select', function (string, count) {
   return string.slice(count)
+})
+
+handlebars.registerHelper('moment', function (context, block) {
+  if (context && context.hash) {
+    block = cloneDeep(context)
+    context = undefined
+  }
+  var date = moment(context)
+
+  if (block.hash.timezone) {
+    date.tz(block.hash.timezone)
+  }
+
+  var hasFormat = false
+
+  for (var i in block.hash) {
+    if (i === 'format') {
+      hasFormat = true
+    } else if (date[i]) {
+      date = date[i](block.hash[i])
+    } else {
+      return date
+    }
+  }
+
+  if (hasFormat) {
+    date = date.format(block.hash.format)
+  }
+  return date
 })
 
 module.exports = handlebars
