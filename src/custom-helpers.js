@@ -529,6 +529,7 @@ handlebars.registerHelper('moment', function (context, block) {
     block = cloneDeep(context)
     context = undefined
   }
+  if(typeof context === 'string' && parseInt(context) != NaN) context = parseInt(context)
   var date = moment(context)
 
   if (block.hash.timezone) {
@@ -552,5 +553,102 @@ handlebars.registerHelper('moment', function (context, block) {
   }
   return date
 })
+
+handlebars.registerHelper('removeExtraSpaces', function (inputString, space = 0) {
+    if (typeof inputString === 'object' || !inputString) {
+        return;
+    }
+
+    return inputString.replace(/\s+/g, ' ').trim();
+});
+
+handlebars.registerHelper(
+    "convert_to_sec",
+    function (ttl, duration, max_second, return_type) {
+        var value = 0;
+        if (duration === "seconds") {
+            value = ttl;
+        } else if (duration === "minutes") {
+            value = ttl * 60;
+        } else if (duration === "hours") {
+            value = ttl * 60 * 60;
+        } else if (duration === "days") {
+            value = ttl * 60 * 60 * 24;
+        }
+        if (return_type === "timestamp") return new Date().getTime() + value;
+        else if (return_type === "unix") return moment().unix() + value;
+        else return Math.min(value, max_second);
+    }
+);
+
+handlebars.registerHelper("getValuesArray", function (obj) {
+    return Object.values(obj);
+});
+
+handlebars.registerHelper("isNumber", function (obj) {
+    return !isNaN(obj);
+});
+
+handlebars.registerHelper('timestamp_from_now', function (time, duration) {
+    var value = 0;
+    if (duration === 'seconds') {
+        value = time;
+    } else if (duration === 'minutes') {
+        value = time * 60;
+    } else if (duration === 'hours') {
+        value = time * 60 * 60;
+    } else if (duration === 'days') {
+        value = time * 60 * 60 * 24;
+    }
+    return moment().toDate().getTime() + value;
+});
+
+handlebars.registerHelper('relativeDate', (day = 0, action) => {
+    if (
+        !['day', 'hour', 'month', 'year', 'minutes', 'seconds'].includes(action)
+    ) {
+        action = 'day';
+    }
+
+    if (day == 'yesterday') {
+        day = '-1';
+    } else if (day == 'today') {
+        day = '0';
+    } else if (day == 'tomorrow') {
+        day = '+1';
+    }
+
+    try {
+        day.parseInt(day);
+    } catch (e) {
+        //nothing to return
+    }
+
+    let type = '+';
+
+    if (day < 0) {
+        type = '-';
+    } else {
+        type = '+';
+    }
+
+    try {
+        day = day.replace('+', '');
+    } catch (e) {
+        //nothing to return
+    }
+
+    try {
+        day = day.replace('-', '');
+    } catch (e) {
+        //nothing to return
+    }
+
+    if (type == '-') {
+        return moment().subtract(day, action).format();
+    } else if (type == '+') {
+        return moment().add(day, action).format();
+    }
+});
 
 module.exports = handlebars
