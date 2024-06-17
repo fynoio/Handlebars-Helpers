@@ -529,7 +529,7 @@ handlebars.registerHelper('moment', function (context, block) {
     block = cloneDeep(context)
     context = undefined
   }
-  if(typeof context === 'string') context = parseInt(context)
+  if(typeof context === 'string' && parseInt(context) != NaN) context = parseInt(context)
   var date = moment(context)
 
   if (block.hash.timezone) {
