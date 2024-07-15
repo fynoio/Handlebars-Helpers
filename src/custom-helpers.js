@@ -529,7 +529,7 @@ handlebars.registerHelper('moment', function (context, block) {
     block = cloneDeep(context)
     context = undefined
   }
-  if(typeof context === 'string' && parseInt(context) != NaN) context = parseInt(context)
+  if (typeof context === 'string' && parseInt(context) != NaN) context = parseInt(context)
   var date = moment(context)
 
   if (block.hash.timezone) {
@@ -555,100 +555,170 @@ handlebars.registerHelper('moment', function (context, block) {
 })
 
 handlebars.registerHelper('removeExtraSpaces', function (inputString, space = 0) {
-    if (typeof inputString === 'object' || !inputString) {
-        return;
-    }
+  if (typeof inputString === 'object' || !inputString) {
+    return
+  }
 
-    return inputString.replace(/\s+/g, ' ').trim();
-});
+  return inputString.replace(/\s+/g, ' ').trim()
+})
 
-handlebars.registerHelper(
-    "convert_to_sec",
-    function (ttl, duration, max_second, return_type) {
-        var value = 0;
-        if (duration === "seconds") {
-            value = ttl;
-        } else if (duration === "minutes") {
-            value = ttl * 60;
-        } else if (duration === "hours") {
-            value = ttl * 60 * 60;
-        } else if (duration === "days") {
-            value = ttl * 60 * 60 * 24;
-        }
-        if (return_type === "timestamp") return new Date().getTime() + value;
-        else if (return_type === "unix") return moment().unix() + value;
-        else return Math.min(value, max_second);
-    }
-);
+handlebars.registerHelper('convert_to_sec', function (ttl, duration, max_second, return_type) {
+  var value = 0
+  if (duration === 'seconds') {
+    value = ttl
+  } else if (duration === 'minutes') {
+    value = ttl * 60
+  } else if (duration === 'hours') {
+    value = ttl * 60 * 60
+  } else if (duration === 'days') {
+    value = ttl * 60 * 60 * 24
+  }
+  if (return_type === 'timestamp') return new Date().getTime() + value
+  else if (return_type === 'unix') return moment().unix() + value
+  else return Math.min(value, max_second)
+})
 
-handlebars.registerHelper("getValuesArray", function (obj) {
-    return Object.values(obj);
-});
+handlebars.registerHelper('getValuesArray', function (obj) {
+  return Object.values(obj)
+})
 
-handlebars.registerHelper("isNumber", function (obj) {
-    return !isNaN(obj);
-});
+handlebars.registerHelper('isNumber', function (obj) {
+  return !isNaN(obj)
+})
 
 handlebars.registerHelper('timestamp_from_now', function (time, duration) {
-    var value = 0;
-    if (duration === 'seconds') {
-        value = time;
-    } else if (duration === 'minutes') {
-        value = time * 60;
-    } else if (duration === 'hours') {
-        value = time * 60 * 60;
-    } else if (duration === 'days') {
-        value = time * 60 * 60 * 24;
-    }
-    return moment().toDate().getTime() + value;
-});
+  var value = 0
+  if (duration === 'seconds') {
+    value = time
+  } else if (duration === 'minutes') {
+    value = time * 60
+  } else if (duration === 'hours') {
+    value = time * 60 * 60
+  } else if (duration === 'days') {
+    value = time * 60 * 60 * 24
+  }
+  return moment().toDate().getTime() + value
+})
 
 handlebars.registerHelper('relativeDate', (day = 0, action) => {
-    if (
-        !['day', 'hour', 'month', 'year', 'minutes', 'seconds'].includes(action)
-    ) {
-        action = 'day';
-    }
+  if (!['day', 'hour', 'month', 'year', 'minutes', 'seconds'].includes(action)) {
+    action = 'day'
+  }
 
-    if (day == 'yesterday') {
-        day = '-1';
-    } else if (day == 'today') {
-        day = '0';
-    } else if (day == 'tomorrow') {
-        day = '+1';
-    }
+  if (day == 'yesterday') {
+    day = '-1'
+  } else if (day == 'today') {
+    day = '0'
+  } else if (day == 'tomorrow') {
+    day = '+1'
+  }
 
-    try {
-        day.parseInt(day);
-    } catch (e) {
-        //nothing to return
-    }
+  try {
+    day.parseInt(day)
+  } catch (e) {
+    //nothing to return
+  }
 
-    let type = '+';
+  let type = '+'
 
-    if (day < 0) {
-        type = '-';
-    } else {
-        type = '+';
-    }
+  if (day < 0) {
+    type = '-'
+  } else {
+    type = '+'
+  }
 
-    try {
-        day = day.replace('+', '');
-    } catch (e) {
-        //nothing to return
-    }
+  try {
+    day = day.replace('+', '')
+  } catch (e) {
+    //nothing to return
+  }
 
-    try {
-        day = day.replace('-', '');
-    } catch (e) {
-        //nothing to return
-    }
+  try {
+    day = day.replace('-', '')
+  } catch (e) {
+    //nothing to return
+  }
 
-    if (type == '-') {
-        return moment().subtract(day, action).format();
-    } else if (type == '+') {
-        return moment().add(day, action).format();
-    }
-});
+  if (type == '-') {
+    return moment().subtract(day, action).format()
+  } else if (type == '+') {
+    return moment().add(day, action).format()
+  }
+})
+
+handlebars.registerHelper('escapeChar', function (value) {
+  let result = handlebars.escapeExpression(value)
+  return new handlebars.SafeString(result)
+})
+
+handlebars.registerHelper('ifCond', function (v1, v2, options) {
+  return v1 === v2 ? options.fn(this) : options.inverse(this)
+})
+
+handlebars.registerHelper('formatTime', function (date, format) {
+  let mmnt = moment(date)
+  return mmnt.format(format)
+})
+
+handlebars.registerHelper('ifGreater', function (v1, v2, options) {
+  return v1 > v2 ? options.fn(this) : options.inverse(this)
+})
+
+handlebars.registerHelper('weekYear', function () {
+  const today = new Date()
+  const startOfYear = new Date(today.getFullYear(), 0, 1)
+  const dayOfYear = Math.floor((today - startOfYear) / (24 * 60 * 60 * 1000)) + 1
+  const weekNumber = Math.ceil(dayOfYear / 7)
+  const year = today.getFullYear()
+  return `${weekNumber}${year}`
+})
+
+handlebars.registerHelper('addOne', function (value) {
+  return parseInt(value) + 1
+})
+
+handlebars.registerHelper('ct-formatDate', function (date, y, m, days) {
+  let d = new Date(date)
+  let year = d.getFullYear()
+  let month = d.getMonth()
+  let day = d.getDate()
+  let fulldate = new Date(year + y, month + m, day + days)
+  return fulldate.toISOString().slice(0, 10)
+})
+
+handlebars.registerHelper('ct-dateDiff', function (date1, options) {
+  let dt1 = new Date()
+  let dt2 = new Date(date1)
+  let date_diff_indays = Math.floor(
+    (Date.UTC(dt2.getFullYear(), dt2.getMonth(), dt2.getDate()) -
+      Date.UTC(dt1.getFullYear(), dt1.getMonth(), dt1.getDate())) /
+      (1000 * 60 * 60 * 24)
+  )
+
+  if (date_diff_indays > 0) {
+    return options.fn(this)
+  } else {
+    return options.inverse(this)
+  }
+})
+
+handlebars.registerHelper('switch', function (value, options) {
+  this.switch_value = value
+  this.switch_break = false
+  return options.fn(this)
+})
+
+handlebars.registerHelper('case', function (value, options) {
+  if (value == this.switch_value) {
+    this.switch_break = true
+    return options.fn(this)
+  }
+})
+
+handlebars.registerHelper('switch-default', function (value) {
+  if (!this.switch_break) {
+    return value
+  }
+})
 
 module.exports = handlebars
