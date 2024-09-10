@@ -721,4 +721,25 @@ handlebars.registerHelper('switch-default', function (value) {
   }
 })
 
+handlebars.registerHelper("proxy", function (url = "", file = "") {
+  try {
+      var file_name;
+      if (file && typeof file !== "object") {
+          file_name = file;
+      } else {
+          file_name = url?.split("/").pop().split("?")[0];
+      }
+      return (
+          "https://fy1.in/proxy/" +
+          file_name +
+          "?url=" +
+          encodeURIComponent(url) +
+          "&filename=" +
+          file_name
+      );
+  } catch (e) {
+      return url;
+  }
+});
+
 module.exports = handlebars
