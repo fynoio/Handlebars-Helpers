@@ -742,4 +742,14 @@ handlebars.registerHelper("proxy", function (url = "", file = "") {
   }
 });
 
+handlebars.registerHelper("hash", function (...args) {
+  let str = "";
+  for (let i in args) {
+      if (typeof args[i] == "object") continue;
+      str += args[i];
+  }
+
+  return crypt.createHash("md5").update(str).digest("hex");
+});
+
 module.exports = handlebars
