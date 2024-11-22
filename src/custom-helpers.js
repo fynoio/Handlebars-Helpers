@@ -753,4 +753,35 @@ handlebars.registerHelper("hash", function (...args) {
   return crypt.createHash("md5").update(str).digest("hex");
 });
 
+handlebars.registerHelper("moment", function (context, block) {
+  if (context && context.hash) {
+      block = cloneDeep(context);
+      context = undefined;
+  }
+  if (typeof context === "string" && !isNaN(context))
+      context = Number(context);
+  var date = moment(context);
+
+  if (block.hash.timezone) {
+      date.tz(block.hash.timezone);
+  }
+
+  var hasFormat = false;
+
+  for (var i in block.hash) {
+      if (i === "format") {
+          hasFormat = true;
+      } else if (date[i]) {
+          date = date[i](block.hash[i]);
+      } else {
+          return date;
+      }
+  }
+
+  if (hasFormat) {
+      date = date.format(block.hash.format);
+  }
+  return date;
+});
+
 module.exports = handlebars
