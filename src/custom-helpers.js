@@ -754,7 +754,8 @@ handlebars.registerHelper("hash", function (...args) {
 });
 
 handlebars.registerHelper("moment", function (context, block) {
-  if (context && context.hash) {
+  try {
+    if (context && context.hash) {
       block = cloneDeep(context);
       context = undefined;
   }
@@ -782,6 +783,11 @@ handlebars.registerHelper("moment", function (context, block) {
       date = date.format(block.hash.format);
   }
   return date;
+  } catch (error) {
+    console.error(error)
+    return context
+  }
+  
 });
 
 module.exports = handlebars
