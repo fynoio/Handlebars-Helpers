@@ -790,4 +790,8 @@ handlebars.registerHelper("moment", function (context, block) {
   
 });
 
+handlebars.registerHelper("uniqArray", function (arr) {
+	return [...new Set(arr)];
+});
+
 module.exports = handlebars
