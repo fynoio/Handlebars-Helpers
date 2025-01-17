@@ -794,4 +794,20 @@ handlebars.registerHelper("uniqArray", function (arr) {
 	return [...new Set(arr)];
 });
 
+handlebars.registerHelper("changeCase", function (str, op) {
+  if (!str) return "";
+  switch (op) {
+      case "upper":
+          return str.toUpperCase();
+      case "lower":
+          return str.toLowerCase();
+      case "title":
+          return str.replace(/\b\w/g, function (match) {
+              return match.toUpperCase();
+          });
+      default:
+          return str;
+  }
+});
+
 module.exports = handlebars
