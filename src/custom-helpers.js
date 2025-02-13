@@ -810,4 +810,91 @@ handlebars.registerHelper("changeCase", function (str, op) {
   }
 });
 
+handlebars.registerHelper("numberToWord", function numberToWords(number) {
+  try {
+      let num = parseInt(number);
+      if (num === 0) return "zero";
+      const belowTwenty = [
+          "",
+          "one",
+          "two",
+          "three",
+          "four",
+          "five",
+          "six",
+          "seven",
+          "eight",
+          "nine",
+          "ten",
+          "eleven",
+          "twelve",
+          "thirteen",
+          "fourteen",
+          "fifteen",
+          "sixteen",
+          "seventeen",
+          "eighteen",
+          "nineteen"
+      ];
+
+      const tens = [
+          "",
+          "",
+          "twenty",
+          "thirty",
+          "forty",
+          "fifty",
+          "sixty",
+          "seventy",
+          "eighty",
+          "ninety"
+      ];
+
+      const thousands = [
+          "",
+          "thousand",
+          "million",
+          "billion",
+          "trillion",
+          "quadrillion"
+      ];
+
+      // eslint-disable-next-line no-inner-declarations
+      function convertChunk(n) {
+          let words = [];
+          if (n >= 100) {
+              words.push(belowTwenty[Math.floor(n / 100)] + " hundred");
+              n %= 100;
+          }
+          if (n >= 20) {
+              words.push(tens[Math.floor(n / 10)]);
+              n %= 10;
+          }
+          if (n > 0) {
+              words.push(belowTwenty[n]);
+          }
+          return words.join(" ");
+      }
+
+      let result = [];
+      let i = 0;
+
+      while (num > 0) {
+          let chunk = num % 1000;
+          if (chunk > 0) {
+              result.unshift(
+                  convertChunk(chunk) +
+                      (thousands[i] ? " " + thousands[i] : "")
+              );
+          }
+          num = Math.floor(num / 1000);
+          i++;
+      }
+
+      return result.join(" ").trim();
+  } catch (e) {
+      return number;
+  }
+});
+
 module.exports = handlebars
