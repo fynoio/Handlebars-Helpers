@@ -2,6 +2,7 @@ const handlebars = require('handlebars')
 const moment = require('moment')
 const cloneDeep = require('lodash/cloneDeep')
 const crypt = require("crypto")
+const unidecode = require("unidecode");
 
 const timezones = {
   '+00:00': 'Greenwich',
@@ -894,6 +895,14 @@ handlebars.registerHelper("numberToWord", function numberToWords(number) {
       return result.join(" ").trim();
   } catch (e) {
       return number;
+  }
+});
+
+handlebars.registerHelper("unidecode", function (value) {
+  try {
+      return unidecode(value);
+  } catch (e) {
+      return value;
   }
 });
 
