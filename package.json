@@ -1,10 +1,11 @@
 {
   "name": "@fyno/handlebars_helpers",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "main": "index.js",
   "dependencies": {
     "handlebars": "^4.7.8",
-    "moment": "^2.29.4"
+    "moment": "^2.29.4",
+    "unidecode": "1.1.0"
   },
   "description": "Fyno Web SDK",
   "repository": {
