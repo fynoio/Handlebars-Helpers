@@ -762,7 +762,8 @@ handlebars.registerHelper("moment", function (context, block) {
   }
   if (typeof context === "string" && !isNaN(context))
       context = Number(context);
-  var date = moment(context);
+  let inputFormat = block.hash.inputFormat;
+  let date = inputFormat ? moment(context, inputFormat) : moment(context);
 
   if (block.hash.timezone) {
       date.tz(block.hash.timezone);
@@ -785,7 +786,6 @@ handlebars.registerHelper("moment", function (context, block) {
   }
   return date;
   } catch (error) {
-    console.error(error)
     return context
   }
   
