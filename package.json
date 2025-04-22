@@ -1,6 +1,6 @@
 {
   "name": "@fyno/handlebars_helpers",
-  "version": "1.0.23",
+  "version": "1.0.25",
   "main": "index.js",
   "dependencies": {
     "handlebars": "^4.7.8",
