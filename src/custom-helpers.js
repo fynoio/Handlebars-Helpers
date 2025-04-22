@@ -756,40 +756,41 @@ handlebars.registerHelper("hash", function (...args) {
 
 handlebars.registerHelper("moment", function (context, block) {
   try {
-    if (context && context.hash) {
-      block = cloneDeep(context);
-      context = undefined;
-  }
-  if (typeof context === "string" && !isNaN(context))
-      context = Number(context);
-  let inputFormat = block.hash.inputFormat;
-  let date = inputFormat ? moment(context, inputFormat) : moment(context);
-
-  if (block.hash.timezone) {
-      date.tz(block.hash.timezone);
-  }
-
-  var hasFormat = false;
-
-  for (var i in block.hash) {
-      if (i === "format") {
-          hasFormat = true;
-      } else if (date[i]) {
-          date = date[i](block.hash[i]);
-      } else {
-          return date;
+      if (context && context.hash) {
+          block = cloneDeep(context);
+          context = undefined;
       }
-  }
+      if (typeof context === 'string' && !isNaN(context))
+          context = Number(context);
 
-  if (hasFormat) {
-      date = date.format(block.hash.format);
+      // Get input format
+      let inputFormat = block.hash.inputFormat;
+      let date = inputFormat ? moment(context, inputFormat) : moment(context);
+
+      if (block.hash.timezone) {
+          date = date.tz(block.hash.timezone);
+      }
+
+      var hasFormat = false;
+
+      for (var i in block.hash) {
+          if (i === 'format') {
+              hasFormat = true;
+          } else if (date[i]) {
+              date = date[i](block.hash[i]);
+          }
+      }
+
+      if (hasFormat) {
+          date = date.format(block.hash.format);
+      }
+      return date;
+  } catch (exception) {
+      return context;
   }
-  return date;
-  } catch (error) {
-    return context
-  }
-  
 });
+
+
 
 handlebars.registerHelper("uniqArray", function (arr) {
 	return [...new Set(arr)];
