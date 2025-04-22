@@ -2,6 +2,7 @@ const handlebars = require('handlebars')
 const moment = require('moment')
 const cloneDeep = require('lodash.clonedeep')
 const crypt = require("crypto")
+const unidecode = require("unidecode");
 
 const timezones = {
   '+00:00': 'Greenwich',
@@ -751,6 +752,158 @@ handlebars.registerHelper("hash", function (...args) {
   }
 
   return crypt.createHash("md5").update(str).digest("hex");
+});
+
+handlebars.registerHelper("moment", function (context, block) {
+  try {
+    if (context && context.hash) {
+      block = cloneDeep(context);
+      context = undefined;
+  }
+  if (typeof context === "string" && !isNaN(context))
+      context = Number(context);
+  let inputFormat = block.hash.inputFormat;
+  let date = inputFormat ? moment(context, inputFormat) : moment(context);
+
+  if (block.hash.timezone) {
+      date.tz(block.hash.timezone);
+  }
+
+  var hasFormat = false;
+
+  for (var i in block.hash) {
+      if (i === "format") {
+          hasFormat = true;
+      } else if (date[i]) {
+          date = date[i](block.hash[i]);
+      } else {
+          return date;
+      }
+  }
+
+  if (hasFormat) {
+      date = date.format(block.hash.format);
+  }
+  return date;
+  } catch (error) {
+    return context
+  }
+  
+});
+
+handlebars.registerHelper("uniqArray", function (arr) {
+	return [...new Set(arr)];
+});
+
+handlebars.registerHelper("changeCase", function (str, op) {
+  if (!str) return "";
+  switch (op) {
+      case "upper":
+          return str.toUpperCase();
+      case "lower":
+          return str.toLowerCase();
+      case "title":
+          return str.replace(/\b\w/g, function (match) {
+              return match.toUpperCase();
+          });
+      default:
+          return str;
+  }
+});
+
+handlebars.registerHelper("numberToWord", function numberToWords(number) {
+  try {
+      let num = parseInt(number);
+      if (num === 0) return "zero";
+      const belowTwenty = [
+          "",
+          "one",
+          "two",
+          "three",
+          "four",
+          "five",
+          "six",
+          "seven",
+          "eight",
+          "nine",
+          "ten",
+          "eleven",
+          "twelve",
+          "thirteen",
+          "fourteen",
+          "fifteen",
+          "sixteen",
+          "seventeen",
+          "eighteen",
+          "nineteen"
+      ];
+
+      const tens = [
+          "",
+          "",
+          "twenty",
+          "thirty",
+          "forty",
+          "fifty",
+          "sixty",
+          "seventy",
+          "eighty",
+          "ninety"
+      ];
+
+      const thousands = [
+          "",
+          "thousand",
+          "million",
+          "billion",
+          "trillion",
+          "quadrillion"
+      ];
+
+      // eslint-disable-next-line no-inner-declarations
+      function convertChunk(n) {
+          let words = [];
+          if (n >= 100) {
+              words.push(belowTwenty[Math.floor(n / 100)] + " hundred");
+              n %= 100;
+          }
+          if (n >= 20) {
+              words.push(tens[Math.floor(n / 10)]);
+              n %= 10;
+          }
+          if (n > 0) {
+              words.push(belowTwenty[n]);
+          }
+          return words.join(" ");
+      }
+
+      let result = [];
+      let i = 0;
+
+      while (num > 0) {
+          let chunk = num % 1000;
+          if (chunk > 0) {
+              result.unshift(
+                  convertChunk(chunk) +
+                      (thousands[i] ? " " + thousands[i] : "")
+              );
+          }
+          num = Math.floor(num / 1000);
+          i++;
+      }
+
+      return result.join(" ").trim();
+  } catch (e) {
+      return number;
+  }
+});
+
+handlebars.registerHelper("unidecode", function (value) {
+  try {
+      return unidecode(value);
+  } catch (e) {
+      return value;
+  }
 });
 
 module.exports = handlebars
