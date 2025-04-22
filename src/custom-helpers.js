@@ -1,6 +1,6 @@
 const handlebars = require('handlebars')
 const moment = require('moment')
-const cloneDeep = require('lodash/cloneDeep')
+const cloneDeep = require('lodash.clonedeep')
 const crypt = require("crypto")
 
 const timezones = {
