@@ -199,7 +199,7 @@ handlebars.registerHelper('parse', function (context) {
 })
 
 handlebars.registerHelper('ifMatches', function (arg1, arg2, options) {
-  return arg1.match(new RegExp(arg2)) ? options.fn(this) : options.inverse(this)
+  return arg1 && arg1.match(new RegExp(arg2)) ? options.fn(this) : options.inverse(this)
 })
 
 handlebars.registerHelper('raw-helper', function (options) {
