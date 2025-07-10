@@ -1,7 +1,8 @@
 const handlebars = require('handlebars')
 const moment = require('moment')
-const cloneDeep = require('lodash/cloneDeep')
+const cloneDeep = require('lodash.clonedeep')
 const crypt = require("crypto")
+const unidecode = require("unidecode");
 
 const timezones = {
   '+00:00': 'Greenwich',
@@ -198,7 +199,7 @@ handlebars.registerHelper('parse', function (context) {
 })
 
 handlebars.registerHelper('ifMatches', function (arg1, arg2, options) {
-  return arg1.match(new RegExp(arg2)) ? options.fn(this) : options.inverse(this)
+  return arg1 && arg1.match(new RegExp(arg2)) ? options.fn(this) : options.inverse(this)
 })
 
 handlebars.registerHelper('raw-helper', function (options) {
@@ -751,6 +752,171 @@ handlebars.registerHelper("hash", function (...args) {
   }
 
   return crypt.createHash("md5").update(str).digest("hex");
+});
+
+handlebars.registerHelper("moment", function (context, block) {
+  try {
+      if (context && context.hash) {
+          block = cloneDeep(context);
+          context = undefined;
+      }
+      if (typeof context === 'string' && !isNaN(context))
+          context = Number(context);
+
+      // Get input format
+      let inputFormat = block.hash.inputFormat;
+      let date = inputFormat ? moment(context, inputFormat) : moment(context);
+
+      if (block.hash.timezone) {
+          date = date.tz(block.hash.timezone);
+      }
+
+      var hasFormat = false;
+
+      for (var i in block.hash) {
+          if (i === 'format') {
+              hasFormat = true;
+          } else if (date[i]) {
+              date = date[i](block.hash[i]);
+          }
+      }
+
+      if (hasFormat) {
+          date = date.format(block.hash.format);
+      }
+      return date;
+  } catch (exception) {
+      return context;
+  }
+});
+
+handlebars.registerHelper("extract_regex", function (input, pattern, flags = "g") {
+  if (typeof input !== "string" || typeof pattern !== "string") {
+      return "";
+  }
+
+  try {
+      const regex = new RegExp(pattern, flags);
+      const matches = regex.exec(input);
+      return matches ? matches.join(",") : "";
+  } catch (err) {
+      return "";
+  }
+});
+
+handlebars.registerHelper("uniqArray", function (arr) {
+	return [...new Set(arr)];
+});
+
+handlebars.registerHelper("changeCase", function (str, op) {
+  if (!str) return "";
+  switch (op) {
+      case "upper":
+          return str.toUpperCase();
+      case "lower":
+          return str.toLowerCase();
+      case "title":
+          return str.replace(/\b\w/g, function (match) {
+              return match.toUpperCase();
+          });
+      default:
+          return str;
+  }
+});
+
+handlebars.registerHelper("numberToWord", function numberToWords(number) {
+  try {
+      let num = parseInt(number);
+      if (num === 0) return "zero";
+      const belowTwenty = [
+          "",
+          "one",
+          "two",
+          "three",
+          "four",
+          "five",
+          "six",
+          "seven",
+          "eight",
+          "nine",
+          "ten",
+          "eleven",
+          "twelve",
+          "thirteen",
+          "fourteen",
+          "fifteen",
+          "sixteen",
+          "seventeen",
+          "eighteen",
+          "nineteen"
+      ];
+
+      const tens = [
+          "",
+          "",
+          "twenty",
+          "thirty",
+          "forty",
+          "fifty",
+          "sixty",
+          "seventy",
+          "eighty",
+          "ninety"
+      ];
+
+      const thousands = [
+          "",
+          "thousand",
+          "million",
+          "billion",
+          "trillion",
+          "quadrillion"
+      ];
+
+      // eslint-disable-next-line no-inner-declarations
+      function convertChunk(n) {
+          let words = [];
+          if (n >= 100) {
+              words.push(belowTwenty[Math.floor(n / 100)] + " hundred");
+              n %= 100;
+          }
+          if (n >= 20) {
+              words.push(tens[Math.floor(n / 10)]);
+              n %= 10;
+          }
+          if (n > 0) {
+              words.push(belowTwenty[n]);
+          }
+          return words.join(" ");
+      }
+
+      let result = [];
+      let i = 0;
+
+      while (num > 0) {
+          let chunk = num % 1000;
+          if (chunk > 0) {
+              result.unshift(
+                  convertChunk(chunk) +
+                      (thousands[i] ? " " + thousands[i] : "")
+              );
+          }
+          num = Math.floor(num / 1000);
+          i++;
+      }
+
+      return result.join(" ").trim();
+  } catch (e) {
+      return number;
+  }
+});
+
+handlebars.registerHelper("unidecode", function (value) {
+  try {
+      return unidecode(value);
+  } catch (e) {
+      return value;
+  }
 });
 
 module.exports = handlebars
