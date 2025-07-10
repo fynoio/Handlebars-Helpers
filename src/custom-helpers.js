@@ -790,7 +790,19 @@ handlebars.registerHelper("moment", function (context, block) {
   }
 });
 
+handlebars.registerHelper("extract_regex", function (input, pattern, flags = "g") {
+  if (typeof input !== "string" || typeof pattern !== "string") {
+      return "";
+  }
 
+  try {
+      const regex = new RegExp(pattern, flags);
+      const matches = regex.exec(input);
+      return matches ? matches.join(",") : "";
+  } catch (err) {
+      return "";
+  }
+});
 
 handlebars.registerHelper("uniqArray", function (arr) {
 	return [...new Set(arr)];
