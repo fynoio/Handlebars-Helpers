@@ -237,6 +237,16 @@ handlebars.registerHelper('isFCM', function (str) {
   else return str
 })
 
+handlebars.registerHelper("isAPNS", function (str) {
+  if (/apns_token:/s.test(str)) return str.split(/apns_token:(.*)/s)[1];
+  else return str;
+});
+
+handlebars.registerHelper("isXiaomi", function (str) {
+  if (/mi_token:/s.test(str)) return str.split(/mi_token:(.*)/s)[1];
+  else return str;
+});
+
 handlebars.registerHelper('isOnesignal', function (str, options) {
   const regex = new RegExp('onesignal_(?:(player_id)|(external_id)):')
   if (regex.test(str)) {
@@ -526,6 +536,22 @@ handlebars.registerHelper('select', function (string, count) {
   return string.slice(count)
 })
 
+handlebars.registerHelper("changeCase", function (str, op) {
+  if (!str) return "";
+  switch (op) {
+      case "upper":
+          return str.toUpperCase();
+      case "lower":
+          return str.toLowerCase();
+      case "title":
+          return str.replace(/\b\w/g, function (match) {
+              return match.toUpperCase();
+          });
+      default:
+          return str;
+  }
+});
+
 handlebars.registerHelper('moment', function (context, block) {
   if (context && context.hash) {
     block = cloneDeep(context)
@@ -579,6 +605,31 @@ handlebars.registerHelper('convert_to_sec', function (ttl, duration, max_second,
   else if (return_type === 'unix') return moment().unix() + value
   else return Math.min(value, max_second)
 })
+
+handlebars.registerHelper("jwt_decode", function (input) {
+  if (!input) return "";
+  const decoded = jwt.decode(input, {
+      complete: true
+  });
+  return decoded.payload;
+});
+
+handlebars.registerHelper("toString", function (input) {
+  if (!input) return "";
+
+  if (typeof input === "object") {
+      return;
+  }
+  return input.toString();
+});
+
+handlebars.registerHelper(
+  "setXiaomiPayload",
+  function (varName, varKey, varValue, options) {
+      options.data.root[varName] = {};
+      options.data.root[varName][varKey] = varValue;
+  }
+);
 
 handlebars.registerHelper('getValuesArray', function (obj) {
   return Object.values(obj)
@@ -653,6 +704,19 @@ handlebars.registerHelper('escapeChar', function (value) {
   return new handlebars.SafeString(result)
 })
 
+handlebars.registerHelper("decodehtmlentities", function (str) {
+  var map = {
+      "&amp;": "&",
+      "&lt;": "<",
+      "&gt;": ">",
+      "&quot;": '"',
+      "&#039;": "'"
+  };
+  return str.replace(/&amp;|&lt;|&gt;|&quot;|&#039;/g, function (m) {
+      return map[m];
+  });
+});
+
 handlebars.registerHelper('ifCond', function (v1, v2, options) {
   return v1 === v2 ? options.fn(this) : options.inverse(this)
 })
@@ -723,6 +787,18 @@ handlebars.registerHelper('switch-default', function (value) {
   }
 })
 
+handlebars.registerHelper("unescape", function (value) {
+  try {
+      return unescape(value);
+  } catch (e) {
+      return value;
+  }
+});
+
+handlebars.registerHelper("Component", (name, options) => {
+  return options?.["data"]?.["root"]?.["$components"]?.[name] || "";
+});
+
 handlebars.registerHelper("proxy", function (url = "", file = "") {
   try {
       var file_name;
@@ -741,6 +817,16 @@ handlebars.registerHelper("proxy", function (url = "", file = "") {
       );
   } catch (e) {
       return url;
+  }
+});
+
+handlebars.registerHelper("getQueryParams", function (url, key) {
+  try {
+      const query = url?.split(/\?(.*)/)?.[1];
+      const params = new URLSearchParams(query || "");
+      return params.get(key) || "";
+  } catch (e) {
+      return "";
   }
 });
 
@@ -808,6 +894,23 @@ handlebars.registerHelper("uniqArray", function (arr) {
 	return [...new Set(arr)];
 });
 
+handlebars.registerHelper("uriEncodeWithReplace", function (str) {
+  try {
+      const replaced_str =
+          encodeURIComponent(str)?.replace(
+              /['()*]/g,
+              (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`
+          ) || str;
+      return replaced_str;
+  } catch (error) {
+      return str;
+  }
+});
+
+handlebars.registerHelper("uriEncode", function (str) {
+  return encodeURIComponent(str);
+});
+
 handlebars.registerHelper("changeCase", function (str, op) {
   if (!str) return "";
   switch (op) {
@@ -821,6 +924,28 @@ handlebars.registerHelper("changeCase", function (str, op) {
           });
       default:
           return str;
+  }
+});
+
+handlebars.registerHelper("filterArray", function (array, key, regexPattern, options) {
+  try {
+      if (!Array.isArray(array)) return "";
+      const regex = new RegExp(regexPattern, "i");
+      let filteredArray = array.filter((item) => regex.test(item[key]));
+
+      return filteredArray
+          .map((item, index) => {
+              return options.fn(item, {
+                  data: {
+                      index,
+                      first: index === 0,
+                      last: index === filteredArray.length - 1
+                  }
+              });
+          })
+          .join("");
+  } catch (e) {
+      return array;
   }
 });
 
@@ -914,6 +1039,36 @@ handlebars.registerHelper("numberToWord", function numberToWords(number) {
 handlebars.registerHelper("unidecode", function (value) {
   try {
       return unidecode(value);
+  } catch (e) {
+      return value;
+  }
+});
+
+handlebars.registerHelper("concat", function (...args) {
+  try {
+      if (args.length === 0) {
+          return "";
+      }
+      let str = "";
+      for (let i in args) {
+          if (typeof args[i] == "string" || typeof args[i] === "number")
+              str += args[i].toString();
+      }
+      return str;
+  } catch (e) {
+      return "";
+  }
+});
+
+handlebars.registerHelper("base64", function (value, type = "") {
+  try {
+      if (type == "encode") {
+          return Buffer.from(value).toString("base64");
+      } else if (type == "decode") {
+          return Buffer.from(value, "base64").toString("utf-8");
+      } else {
+          return value;
+      }
   } catch (e) {
       return value;
   }
