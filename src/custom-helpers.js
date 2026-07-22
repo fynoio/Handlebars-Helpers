@@ -919,4 +919,12 @@ handlebars.registerHelper("unidecode", function (value) {
   }
 });
 
+handlebars.registerHelper("decodeURIComponent", function (value) {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, " "));
+  } catch (e) {
+    return value;
+  }
+});
+
 module.exports = handlebars
