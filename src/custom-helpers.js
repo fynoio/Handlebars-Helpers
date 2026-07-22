@@ -1074,4 +1074,12 @@ handlebars.registerHelper("base64", function (value, type = "") {
   }
 });
 
+handlebars.registerHelper("decodeURIComponent", function (value) {
+  try {
+    return decodeURIComponent(value.replace(/\+/g, " "));
+  } catch (e) {
+    return value;
+  }
+});
+
 module.exports = handlebars
