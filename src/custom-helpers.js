@@ -5,7 +5,6 @@ const unidecode = require("unidecode");
 
 const crypto = require("crypto");
 const forge = require("node-forge");
-const fs = require("fs");
 require("moment-timezone");
 
 const timezones = {
@@ -1125,12 +1124,23 @@ const PRF_HASH = {
     "1.2.840.113549.2.11": "sha512"
 };
 
+function _readPkcs12File(path) {
+    const fs = require("fs");
+    if (!fs || typeof fs.readFileSync !== "function") {
+        throw new Error(
+            "Reading a PKCS12 file from a path is not supported in browser builds. " +
+            "Pass the base64-encoded contents of the .p12 instead."
+        );
+    }
+    return fs.readFileSync(path, "binary");
+}
+
 function loadKeyFromPkcs12(p12Input, storePassword, keyAlias, keyPassword) {
     let der;
     if (p12Input.startsWith("MI")) {
         der = Buffer.from(p12Input, "base64").toString("binary");
     } else {
-        der = fs.readFileSync(p12Input, "binary");
+        der = _readPkcs12File(p12Input);
     }
 
     const root = forge.asn1.fromDer(der);

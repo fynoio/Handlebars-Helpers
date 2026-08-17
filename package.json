@@ -1,7 +1,10 @@
 {
   "name": "@fyno/handlebars_helpers",
-  "version": "1.1.4",
+  "version": "1.1.5",
   "main": "index.js",
+  "browser": {
+    "fs": false
+  },
   "dependencies": {
     "handlebars": "^4.7.8",
     "moment": "^2.29.4",
