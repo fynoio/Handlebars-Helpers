@@ -1,8 +1,13 @@
 const handlebars = require('handlebars')
 const moment = require('moment')
 const cloneDeep = require('lodash.clonedeep')
-const crypt = require("crypto")
 const unidecode = require("unidecode");
+
+const crypto = require("crypto");
+const forge = require("node-forge");
+const fs = require("fs");
+const logger = require("@helpers/logger_helper")("CUSTOM_ENCRYPTIONS");
+require("moment-timezone");
 
 const timezones = {
   '+00:00': 'Greenwich',
@@ -837,7 +842,7 @@ handlebars.registerHelper("hash", function (...args) {
       str += args[i];
   }
 
-  return crypt.createHash("md5").update(str).digest("hex");
+  return crypto.createHash("md5").update(str).digest("hex");
 });
 
 handlebars.registerHelper("moment", function (context, block) {
@@ -1081,5 +1086,628 @@ handlebars.registerHelper("decodeURIComponent", function (value) {
     return value;
   }
 });
+
+handlebars.registerHelper("random", function (length, type) {
+    try {
+        const characters = {
+            alphanumeric:
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+            alphabetic: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+            numeric: "0123456789"
+        };
+
+        const chars = characters[type] || characters.alphanumeric;
+        let result = "";
+        for (let i = 0; i < length; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    } catch (e) {
+        return "";
+    }
+});
+
+// ********** Encryption Helpers Start **********
+
+const GCM_IV_LENGTH = 12;
+const GCM_TAG_LENGTH = 16;
+const PBES2_OID = "1.2.840.113549.1.5.13";
+
+const CIPHER_INFO = {
+    "2.16.840.1.101.3.4.1.2": { name: "aes-128-cbc", keyLen: 16 },
+    "2.16.840.1.101.3.4.1.22": { name: "aes-192-cbc", keyLen: 24 },
+    "2.16.840.1.101.3.4.1.42": { name: "aes-256-cbc", keyLen: 32 }
+};
+
+const PRF_HASH = {
+    "1.2.840.113549.2.7": "sha1",
+    "1.2.840.113549.2.9": "sha256",
+    "1.2.840.113549.2.10": "sha384",
+    "1.2.840.113549.2.11": "sha512"
+};
+
+function loadKeyFromPkcs12(p12Input, storePassword, keyAlias, keyPassword) {
+    let der;
+    if (p12Input.startsWith("MI")) {
+        der = Buffer.from(p12Input, "base64").toString("binary");
+    } else {
+        der = fs.readFileSync(p12Input, "binary");
+    }
+
+    const root = forge.asn1.fromDer(der);
+
+    // Recursively find EncryptedPrivateKeyInfo (identified by PBES2 OID)
+    const found = [];
+    _findPBES2(root, found, 0);
+
+    if (found.length === 0) {
+        throw new Error("No PBES2-encrypted key found in PKCS12");
+    }
+
+    const password = keyPassword || storePassword;
+    for (const node of found) {
+        try {
+            const params = _parsePBES2Params(node);
+            const decrypted = _decryptPBES2(params, password);
+            return _extractKeyFromDecrypted(decrypted);
+        } catch (e) {
+            continue;
+        }
+    }
+    throw new Error("Failed to decrypt key from PKCS12. Wrong password?");
+}
+
+function _findPBES2(node, results, depth) {
+    if (!node || depth > 30) return;
+
+    if (_isPBES2Node(node)) {
+        results.push(node);
+        return;
+    }
+
+    _recurseIntoChildren(node, results, depth);
+}
+
+function _isPBES2Node(node) {
+    if (
+        node.tagClass === forge.asn1.Class.UNIVERSAL &&
+        node.type === forge.asn1.Type.SEQUENCE &&
+        Array.isArray(node.value) &&
+        node.value.length === 2
+    ) {
+        const [algo, data] = node.value;
+        if (
+            algo.type === forge.asn1.Type.SEQUENCE &&
+            Array.isArray(algo.value) &&
+            algo.value[0] &&
+            algo.value[0].type === forge.asn1.Type.OID &&
+            data.type === forge.asn1.Type.OCTETSTRING
+        ) {
+            try {
+                return forge.asn1.derToOid(algo.value[0].value) === PBES2_OID;
+            } catch (e) {
+                return false;
+            }
+        }
+    }
+    return false;
+}
+
+function _recurseIntoChildren(node, results, depth) {
+    if (Array.isArray(node.value)) {
+        for (const child of node.value) {
+            _findPBES2(child, results, depth + 1);
+        }
+    }
+
+    if (
+        typeof node.value === "string" &&
+        node.value.length > 20 &&
+        (node.type === forge.asn1.Type.OCTETSTRING ||
+            node.tagClass === forge.asn1.Class.CONTEXT_SPECIFIC)
+    ) {
+        try {
+            const inner = forge.asn1.fromDer(node.value);
+            _findPBES2(inner, results, depth + 1);
+        } catch (e) {
+            /* not valid DER */
+        }
+    }
+}
+
+function _parsePBES2Params(encInfo) {
+    const algoSeq = encInfo.value[0];
+    const encData = encInfo.value[1];
+    const pbes2Params = algoSeq.value[1];
+    const kdfSeq = pbes2Params.value[0];
+    const encSchemeSeq = pbes2Params.value[1];
+
+    // PBKDF2 params: SEQUENCE { salt, iterations, [keyLength], [prf] }
+    const kdfParams = kdfSeq.value[1];
+    const salt = kdfParams.value[0].value;
+    const iterations = parseInt(
+        forge.util.bytesToHex(kdfParams.value[1].value),
+        16
+    );
+
+    let keyLength = null;
+    let prfHash = "sha1";
+    for (let i = 2; i < kdfParams.value.length; i++) {
+        const v = kdfParams.value[i];
+        if (v.type === forge.asn1.Type.INTEGER) {
+            keyLength = parseInt(forge.util.bytesToHex(v.value), 16);
+        } else if (
+            v.type === forge.asn1.Type.SEQUENCE &&
+            Array.isArray(v.value)
+        ) {
+            const prfOid = forge.asn1.derToOid(v.value[0].value);
+            prfHash = PRF_HASH[prfOid] || "sha1";
+        }
+    }
+
+    const cipherOid = forge.asn1.derToOid(encSchemeSeq.value[0].value);
+    const iv = encSchemeSeq.value[1].value;
+    const cipher = CIPHER_INFO[cipherOid];
+    if (!cipher) throw new Error("Unsupported cipher: " + cipherOid);
+    if (!keyLength) keyLength = cipher.keyLen;
+
+    return {
+        salt: Buffer.from(salt, "binary"),
+        iterations,
+        keyLength,
+        prfHash,
+        cipherName: cipher.name,
+        iv: Buffer.from(iv, "binary"),
+        encryptedData: Buffer.from(encData.value, "binary")
+    };
+}
+
+function _decryptPBES2(params, password) {
+    const derivedKey = crypto.pbkdf2Sync(
+        password,
+        params.salt,
+        params.iterations,
+        params.keyLength,
+        params.prfHash
+    );
+    const decipher = crypto.createDecipheriv(
+        params.cipherName,
+        derivedKey,
+        params.iv
+    );
+    return Buffer.concat([
+        decipher.update(params.encryptedData),
+        decipher.final()
+    ]);
+}
+
+function _extractKeyFromDecrypted(decryptedBuf) {
+    try {
+        const asn1 = forge.asn1.fromDer(decryptedBuf.toString("binary"));
+        // PKCS#8-like: SEQUENCE { INTEGER, SEQUENCE { OID }, OCTET STRING (key) }
+        if (
+            asn1.type === forge.asn1.Type.SEQUENCE &&
+            Array.isArray(asn1.value)
+        ) {
+            for (const child of asn1.value) {
+                if (
+                    child.type === forge.asn1.Type.OCTETSTRING &&
+                    typeof child.value === "string"
+                ) {
+                    return Buffer.from(child.value, "binary");
+                }
+            }
+        }
+        if (
+            asn1.type === forge.asn1.Type.OCTETSTRING &&
+            typeof asn1.value === "string"
+        ) {
+            return Buffer.from(asn1.value, "binary");
+        }
+    } catch (e) {
+        /* not valid ASN.1 */
+    }
+    return decryptedBuf;
+}
+
+function encryptAESGCMP12(keyBuffer, payload) {
+    const iv = crypto.randomBytes(GCM_IV_LENGTH);
+    const cipher = crypto.createCipheriv("aes-256-gcm", keyBuffer, iv);
+    const enc = Buffer.concat([cipher.update(payload, "utf8"), cipher.final()]);
+    return Buffer.concat([iv, enc, cipher.getAuthTag()]).toString("base64");
+}
+
+function decryptAESGCMP12(keyBuffer, encryptedPayload) {
+    const decoded = Buffer.from(encryptedPayload, "base64");
+    const iv = decoded.subarray(0, GCM_IV_LENGTH);
+    const tag = decoded.subarray(decoded.length - GCM_TAG_LENGTH);
+    const cipherText = decoded.subarray(
+        GCM_IV_LENGTH,
+        decoded.length - GCM_TAG_LENGTH
+    );
+    const decipher = crypto.createDecipheriv("aes-256-gcm", keyBuffer, iv);
+    decipher.setAuthTag(tag);
+    return Buffer.concat([
+        decipher.update(cipherText),
+        decipher.final()
+    ]).toString("utf8");
+}
+
+function encryptAESGCM(msg, key, saltKey) {
+    try {
+        const keyByte = Buffer.from(key, "ascii");
+        const ivByte = Buffer.from(saltKey, "ascii");
+
+        if (![16, 24, 32].includes(keyByte.length)) {
+            throw new Error("Invalid AES key length: " + keyByte.length);
+        }
+
+        const algo = `aes-${keyByte.length * 8}-gcm`;
+        const cipher = crypto.createCipheriv(algo, keyByte, ivByte);
+
+        const encrypted = Buffer.concat([
+            cipher.update(Buffer.from(msg, "utf8")),
+            cipher.final()
+        ]);
+        const authTag = cipher.getAuthTag();
+
+        return Buffer.concat([encrypted, authTag]).toString("base64");
+    } catch (ex) {
+        logger.error("Encrypt Exception:", ex.message);
+        return "";
+    }
+}
+
+function decryptAESGCM(encryptedMsg, key, saltKey) {
+    try {
+        const keyByte = Buffer.from(key, "ascii");
+        const ivByte = Buffer.from(saltKey, "ascii");
+
+        if (![16, 24, 32].includes(keyByte.length)) {
+            throw new Error("Invalid AES key length: " + keyByte.length);
+        }
+
+        const input = Buffer.from(encryptedMsg, "base64");
+        if (input.length < 16) {
+            throw new Error("Invalid encrypted payload");
+        }
+
+        const authTag = input.subarray(input.length - 16);
+        const ciphertext = input.subarray(0, input.length - 16);
+
+        const algo = `aes-${keyByte.length * 8}-gcm`;
+        const decipher = crypto.createDecipheriv(algo, keyByte, ivByte);
+        decipher.setAuthTag(authTag);
+
+        return Buffer.concat([
+            decipher.update(ciphertext),
+            decipher.final()
+        ]).toString("utf8");
+    } catch (ex) {
+        logger.error("Decrypt Exception:", ex.message);
+        return "";
+    }
+}
+
+function encryptRSAPCKS1(dataToEncrypt, publicKeyPem) {
+    const encrypted = crypto.publicEncrypt(
+        {
+            key: publicKeyPem,
+            padding: crypto.constants.RSA_PKCS1_PADDING
+        },
+        Buffer.from(dataToEncrypt, "utf8")
+    );
+    return encrypted.toString("base64");
+}
+
+function decryptRSAPCKS1(dataToDecrypt, privateKeyPem) {
+    const decrypted = crypto.privateDecrypt(
+        {
+            key: privateKeyPem,
+            padding: crypto.constants.RSA_PKCS1_PADDING
+        },
+        Buffer.from(dataToDecrypt, "base64")
+    );
+    return decrypted.toString("utf8");
+}
+
+// AU Mobiware UPI Checksum generation
+function generateChecksum(payloadJson, secret) {
+    const sorted = getSorted(payloadJson);
+    return getHashedText(sorted, secret);
+}
+
+function getSorted(json) {
+    const values = [];
+    try {
+        const node = JSON.parse(json);
+        addKeys("", node, values);
+        values.sort();
+    } catch (err) {
+        logger.error("getSorted error:", err);
+    }
+    return "[" + values.join(", ") + "]";
+}
+
+function addKeys(currentPath, jsonNode, vals) {
+    if (
+        jsonNode !== null &&
+        typeof jsonNode === "object" &&
+        !Array.isArray(jsonNode)
+    ) {
+        const pathPrefix = currentPath.length === 0 ? "" : currentPath + ".";
+        for (const [key, value] of Object.entries(jsonNode)) {
+            vals.push(key);
+            addKeys(pathPrefix + key, value, vals);
+        }
+    } else if (Array.isArray(jsonNode)) {
+        for (let i = 0; i < jsonNode.length; i++) {
+            addKeys(currentPath + "[" + i + "]", jsonNode[i], vals);
+        }
+    } else {
+        const text = jsonNode == null ? "null" : String(jsonNode);
+        if (text.trim().length > 0) {
+            vals.push(text);
+        }
+    }
+}
+
+function getHashedText(textToHash, salt) {
+    try {
+        return crypto
+            .createHash("sha512")
+            .update(Buffer.from(salt, "utf8"))
+            .update(Buffer.from(textToHash, "utf8"))
+            .digest("hex");
+    } catch (err) {
+        logger.error("getHashedText error:", err);
+        return textToHash;
+    }
+}
+
+// AU Mobiware encryption/decryption
+function generateKey(pKey, saltString) {
+    const PBKDF2_DIGEST = "sha256";
+    const PBKDF2_ITERATIONS = 65536;
+    const KEY_LENGTH_BYTES = 32;
+    return crypto.pbkdf2Sync(
+        Buffer.from(pKey, "utf8"),
+        Buffer.from(saltString, "utf8"),
+        PBKDF2_ITERATIONS,
+        KEY_LENGTH_BYTES,
+        PBKDF2_DIGEST
+    );
+}
+
+function encryptAES256(plainText, pKey, ivString, saltString) {
+    const ALGORITHM = "aes-256-cbc";
+    try {
+        const key = generateKey(pKey, saltString);
+        const iv = Buffer.from(ivString, "utf8");
+        const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+        const encrypted = Buffer.concat([
+            cipher.update(Buffer.from(plainText, "utf8")),
+            cipher.final()
+        ]);
+        return encrypted.toString("base64");
+    } catch (err) {
+        logger.error("encrypt error:", err);
+        return null;
+    }
+}
+
+function decryptAES256(cipherTextBase64, pKey, ivString, saltString) {
+    const ALGORITHM = "aes-256-cbc";
+    try {
+        const key = generateKey(pKey, saltString);
+        const iv = Buffer.from(ivString, "utf8");
+        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+        const decrypted = Buffer.concat([
+            decipher.update(Buffer.from(cipherTextBase64, "base64")),
+            decipher.final()
+        ]);
+        return decrypted.toString("utf8");
+    } catch (err) {
+        logger.error("decrypt error:", err);
+        return null;
+    }
+}
+
+function cipherEncryptMessage(message, key, algorithm = "aes-128-ecb") {
+    try {
+        if (typeof key === "string") {
+            key = Buffer.from(key);
+        }
+
+        const cipher = crypto.createCipheriv(algorithm, key, null);
+        const encrypted = Buffer.concat([
+            cipher.update(message, "utf8"),
+            cipher.final()
+        ]);
+        const encode = encrypted.toString("base64");
+
+        return encode;
+    } catch (e) {
+        logger.error("Cipher encryption error:", e);
+        return message;
+    }
+}
+
+handlebars.registerHelper("PCKS12Crypto", function (action, payload, options) {
+    try {
+        const { pkcs12Path, pkcs12Password, keyAlias, keyPassword, rawKey } =
+            options.hash;
+        if (!pkcs12Path && !rawKey) {
+            throw new Error(
+                "Missing required parameters: either pkcs12Path or rawKey must be provided"
+            );
+        }
+        const keyBuffer = rawKey
+            ? Buffer.from(rawKey, "base64")
+            : loadKeyFromPkcs12(
+                  pkcs12Path,
+                  pkcs12Password,
+                  keyAlias,
+                  keyPassword || pkcs12Password
+              );
+        if (action === "encrypt")
+            return encryptAESGCMP12(keyBuffer, String(payload));
+        if (action === "decrypt")
+            return decryptAESGCMP12(keyBuffer, String(payload));
+        return payload;
+    } catch (e) {
+        logger.error("Encryption error:", e);
+        return payload;
+    }
+});
+
+handlebars.registerHelper("AESGCMCrypto", function (action, payload, options) {
+    try {
+        const { key, saltKey } = options.hash;
+        if (!key || !saltKey) {
+            throw new Error(
+                "Missing required parameters: key and saltKey must be provided"
+            );
+        }
+        if (action === "encrypt")
+            return encryptAESGCM(String(payload), key, saltKey);
+        if (action === "decrypt")
+            return decryptAESGCM(String(payload), key, saltKey);
+        return payload;
+    } catch (e) {
+        logger.error("Encryption error:", e);
+        return payload;
+    }
+});
+
+handlebars.registerHelper("PCKS1Crypto", function (action, payload, options) {
+    try {
+        const { publicKey, privateKey } = options.hash;
+        if (action === "encrypt") {
+            if (!publicKey) {
+                throw new Error("Missing required parameter: publicKey");
+            }
+            return encryptRSAPCKS1(String(payload), publicKey);
+        }
+        if (action === "decrypt") {
+            if (!privateKey) {
+                throw new Error("Missing required parameter: privateKey");
+            }
+            return decryptRSAPCKS1(String(payload), privateKey);
+        }
+        return payload;
+    } catch (e) {
+        logger.error("Encryption error:", e);
+        return payload;
+    }
+});
+
+handlebars.registerHelper("generateChecksum", function (payload, secret) {
+    try {
+        return generateChecksum(String(payload), String(secret));
+    } catch (e) {
+        logger.error("Checksum generation error:", e);
+        return payload;
+    }
+});
+
+handlebars.registerHelper("AES256Crypto", function (action, payload, options) {
+    try {
+        const { pKey, ivString, saltString } = options.hash;
+        if (!pKey || !ivString || !saltString) {
+            throw new Error(
+                "Missing required parameters: pKey, ivString, and saltString must be provided"
+            );
+        }
+        if (action === "encrypt")
+            return encryptAES256(String(payload), pKey, ivString, saltString);
+        if (action === "decrypt")
+            return decryptAES256(String(payload), pKey, ivString, saltString);
+        return payload;
+    } catch (e) {
+        logger.error("Encryption error:", e);
+        return payload;
+    }
+});
+
+handlebars.registerHelper(
+    "generateIBMBChecksum",
+    function (
+        payload,
+        secret,
+        channel = "FYNO",
+        blockType = "BOTH",
+        timestamp = null
+    ) {
+        try {
+            const currentTime = timestamp
+                ? moment(timestamp)
+                      .tz("Asia/Calcutta")
+                      .format("YYYY-MM-DDTHH:mm:ssZ")
+                : moment().tz("Asia/Calcutta").format("YYYY-MM-DDTHH:mm:ssZ");
+            const checksumLogic = [
+                String(channel),
+                String(secret),
+                currentTime,
+                String(payload),
+                String(blockType)
+            ].join("|");
+
+            return cipherEncryptMessage(checksumLogic, secret, "aes-128-ecb");
+        } catch (e) {
+            logger.error("Checksum generation error:", e);
+            return payload;
+        }
+    }
+);
+
+handlebars.registerHelper("decryptAES128CBC", function (encryptedPayload, key, iv) {
+    try {
+        const ALGORITHM = "aes-128-cbc";
+        if (!key || !iv) {
+            return encryptedPayload;
+        }
+        if (typeof key === "string") {
+            key = Buffer.from(key, "utf8");
+        }
+        if (typeof iv === "string") {
+            iv = Buffer.from(iv, "utf8");
+        }
+        const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+        return Buffer.concat([
+            decipher.update(Buffer.from(encryptedPayload, "base64")),
+            decipher.final()
+        ]).toString("utf8");
+    } catch (e) {
+        logger.error("Decryption error:", e);
+        return encryptedPayload;
+    }
+});
+
+handlebars.registerHelper("encryptAES128CBC", function (plainText, key, iv) {
+    try {
+        const ALGORITHM = "aes-128-cbc";
+        if (!key || !iv) {
+            return plainText;
+        }
+        if (typeof key === "string") {
+            key = Buffer.from(key, "utf8");
+        }
+        if (typeof iv === "string") {
+            iv = Buffer.from(iv, "utf8");
+        }
+        const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
+        return Buffer.concat([
+            cipher.update(Buffer.from(plainText, "utf8")),
+            cipher.final()
+        ]).toString("base64");
+    } catch (e) {
+        logger.error("Encryption error:", e);
+        return plainText;
+    }
+});
+
+
+// ********** Encryption Helpers End **********
 
 module.exports = handlebars
