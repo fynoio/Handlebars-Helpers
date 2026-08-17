@@ -6,7 +6,6 @@ const unidecode = require("unidecode");
 const crypto = require("crypto");
 const forge = require("node-forge");
 const fs = require("fs");
-const logger = require("@helpers/logger_helper")("CUSTOM_ENCRYPTIONS");
 require("moment-timezone");
 
 const timezones = {
@@ -1353,7 +1352,6 @@ function encryptAESGCM(msg, key, saltKey) {
 
         return Buffer.concat([encrypted, authTag]).toString("base64");
     } catch (ex) {
-        logger.error("Encrypt Exception:", ex.message);
         return "";
     }
 }
@@ -1384,7 +1382,6 @@ function decryptAESGCM(encryptedMsg, key, saltKey) {
             decipher.final()
         ]).toString("utf8");
     } catch (ex) {
-        logger.error("Decrypt Exception:", ex.message);
         return "";
     }
 }
@@ -1424,7 +1421,6 @@ function getSorted(json) {
         addKeys("", node, values);
         values.sort();
     } catch (err) {
-        logger.error("getSorted error:", err);
     }
     return "[" + values.join(", ") + "]";
 }
@@ -1460,7 +1456,6 @@ function getHashedText(textToHash, salt) {
             .update(Buffer.from(textToHash, "utf8"))
             .digest("hex");
     } catch (err) {
-        logger.error("getHashedText error:", err);
         return textToHash;
     }
 }
@@ -1491,7 +1486,6 @@ function encryptAES256(plainText, pKey, ivString, saltString) {
         ]);
         return encrypted.toString("base64");
     } catch (err) {
-        logger.error("encrypt error:", err);
         return null;
     }
 }
@@ -1508,7 +1502,6 @@ function decryptAES256(cipherTextBase64, pKey, ivString, saltString) {
         ]);
         return decrypted.toString("utf8");
     } catch (err) {
-        logger.error("decrypt error:", err);
         return null;
     }
 }
@@ -1528,7 +1521,6 @@ function cipherEncryptMessage(message, key, algorithm = "aes-128-ecb") {
 
         return encode;
     } catch (e) {
-        logger.error("Cipher encryption error:", e);
         return message;
     }
 }
@@ -1556,7 +1548,6 @@ handlebars.registerHelper("PCKS12Crypto", function (action, payload, options) {
             return decryptAESGCMP12(keyBuffer, String(payload));
         return payload;
     } catch (e) {
-        logger.error("Encryption error:", e);
         return payload;
     }
 });
@@ -1575,7 +1566,6 @@ handlebars.registerHelper("AESGCMCrypto", function (action, payload, options) {
             return decryptAESGCM(String(payload), key, saltKey);
         return payload;
     } catch (e) {
-        logger.error("Encryption error:", e);
         return payload;
     }
 });
@@ -1597,7 +1587,6 @@ handlebars.registerHelper("PCKS1Crypto", function (action, payload, options) {
         }
         return payload;
     } catch (e) {
-        logger.error("Encryption error:", e);
         return payload;
     }
 });
@@ -1606,7 +1595,6 @@ handlebars.registerHelper("generateChecksum", function (payload, secret) {
     try {
         return generateChecksum(String(payload), String(secret));
     } catch (e) {
-        logger.error("Checksum generation error:", e);
         return payload;
     }
 });
@@ -1625,7 +1613,6 @@ handlebars.registerHelper("AES256Crypto", function (action, payload, options) {
             return decryptAES256(String(payload), pKey, ivString, saltString);
         return payload;
     } catch (e) {
-        logger.error("Encryption error:", e);
         return payload;
     }
 });
@@ -1655,7 +1642,6 @@ handlebars.registerHelper(
 
             return cipherEncryptMessage(checksumLogic, secret, "aes-128-ecb");
         } catch (e) {
-            logger.error("Checksum generation error:", e);
             return payload;
         }
     }
@@ -1679,7 +1665,6 @@ handlebars.registerHelper("decryptAES128CBC", function (encryptedPayload, key, i
             decipher.final()
         ]).toString("utf8");
     } catch (e) {
-        logger.error("Decryption error:", e);
         return encryptedPayload;
     }
 });
@@ -1702,7 +1687,6 @@ handlebars.registerHelper("encryptAES128CBC", function (plainText, key, iv) {
             cipher.final()
         ]).toString("base64");
     } catch (e) {
-        logger.error("Encryption error:", e);
         return plainText;
     }
 });
