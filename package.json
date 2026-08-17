@@ -7,7 +7,7 @@
     "moment": "^2.29.4",
     "lodash.clonedeep": "^4.5.0",
     "unidecode": "1.1.0",
-    "node-forge": "1.40",
+    "node-forge": "1.4.0",
     "moment-timezone": "0.5.38"
 
   },
