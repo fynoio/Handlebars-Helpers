@@ -1,6 +1,6 @@
 {
   "name": "@fyno/handlebars_helpers",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "main": "index.js",
   "browser": {
     "fs": false
@@ -10,7 +10,7 @@
     "moment": "^2.29.4",
     "lodash.clonedeep": "^4.5.0",
     "unidecode": "1.1.0",
-    "node-forge": "1.4.0",
+    "node-forge": "1.4.1",
     "moment-timezone": "0.5.38"
 
   },
