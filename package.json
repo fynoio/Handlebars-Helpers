@@ -1,6 +1,6 @@
 {
   "name": "@fyno/handlebars_helpers",
-  "version": "1.1.6",
+  "version": "1.1.7",
   "main": "index.js",
   "browser": {
     "fs": false
@@ -11,7 +11,8 @@
     "lodash.clonedeep": "^4.5.0",
     "unidecode": "1.1.0",
     "node-forge": "1.4.1",
-    "moment-timezone": "0.5.38"
+    "moment-timezone": "0.5.38",
+    "google-libphonenumber": "3.2.48"
 
   },
   "description": "Fyno Web SDK",
