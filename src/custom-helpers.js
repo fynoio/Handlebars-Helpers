@@ -5,6 +5,11 @@ const unidecode = require("unidecode");
 
 const crypto = require("crypto");
 const forge = require("node-forge");
+const lib = require("google-libphonenumber");
+
+const phoneUtil = lib.PhoneNumberUtil.getInstance();
+const PNF = lib.PhoneNumberFormat;
+
 require("moment-timezone");
 
 const timezones = {
@@ -1703,5 +1708,55 @@ handlebars.registerHelper("encryptAES128CBC", function (plainText, key, iv) {
 
 
 // ********** Encryption Helpers End **********
+
+handlebars.registerHelper("phonelib", function (value, operation, options) {
+  if (typeof operation === "object") {
+    options = operation;
+    operation = "e164";
+  }
+
+  const {
+    country = "IN",
+    fallback = value,
+    allowInvalid = false
+  } = options?.hash || {};
+  const action = String(operation || "e164")
+    .toLowerCase()
+    .replace(/[_-]/g, "");
+
+  if (value == null || value === "")
+    return action === "isvalid" ? false : fallback;
+  try {
+    const phone = phoneUtil.parse(
+      String(value).trim(),
+      String(country).toUpperCase()
+    );
+    const valid = phoneUtil.isValidNumber(phone);
+
+    if (action === "isvalid") return valid;
+    if (!valid && !allowInvalid) return fallback;
+
+    switch (action) {
+      case "e164":
+        return phoneUtil.format(phone, PNF.E164);
+      case "international":
+        return phoneUtil.format(phone, PNF.INTERNATIONAL);
+      case "national":
+        return phoneUtil.format(phone, PNF.NATIONAL);
+      case "nationalnumber":
+        return phoneUtil.getNationalSignificantNumber(phone);
+      case "countrycode":
+        return String(phone.getCountryCode());
+      case "country":
+        return phoneUtil.getRegionCodeForNumber(phone) || "";
+      case "uri":
+        return phoneUtil.format(phone, PNF.RFC3966);
+      default:
+        return fallback;
+    }
+  } catch {
+    return action === "isvalid" ? false : fallback;
+  }
+});
 
 module.exports = handlebars
