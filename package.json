@@ -10,7 +10,7 @@
     "moment": "^2.29.4",
     "lodash.clonedeep": "^4.5.0",
     "unidecode": "1.1.0",
-    "node-forge": "1.4.1",
+    "node-forge": "1.4.3",
     "moment-timezone": "0.5.38",
     "google-libphonenumber": "3.2.48"
 
